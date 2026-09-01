@@ -1,0 +1,1 @@
+ALTER TABLE "sisencomendas"."encomendas" ADD COLUMN "retirado_por" text;

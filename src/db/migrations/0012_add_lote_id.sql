@@ -1,0 +1,2 @@
+ALTER TABLE "sisencomendas"."encomendas" ADD COLUMN "lote_id" uuid DEFAULT gen_random_uuid() NOT NULL;--> statement-breakpoint
+CREATE INDEX "encomendas_lote_idx" ON "sisencomendas"."encomendas" USING btree ("lote_id");

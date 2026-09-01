@@ -1,0 +1,1 @@
+DROP TABLE "sisencomendas"."login_throttle" CASCADE;

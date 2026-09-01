@@ -1,0 +1,12 @@
+ALTER TABLE "sisencomendas"."usuarios" ALTER COLUMN "role" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "sisencomendas"."usuarios" ALTER COLUMN "role" SET DEFAULT 'porteiro'::text;--> statement-breakpoint
+DROP TYPE "sisencomendas"."usuario_role";--> statement-breakpoint
+CREATE TYPE "sisencomendas"."usuario_role" AS ENUM('desenvolvedor', 'administracao', 'porteiro');--> statement-breakpoint
+ALTER TABLE "sisencomendas"."usuarios" ALTER COLUMN "role" SET DEFAULT 'porteiro'::"sisencomendas"."usuario_role";--> statement-breakpoint
+ALTER TABLE "sisencomendas"."usuarios" ALTER COLUMN "role" SET DATA TYPE "sisencomendas"."usuario_role" USING "role"::"sisencomendas"."usuario_role";--> statement-breakpoint
+ALTER POLICY "condominios_update_admin" ON "sisencomendas"."condominios" TO sisencomendas_app USING (id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor') WITH CHECK (id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor');--> statement-breakpoint
+ALTER POLICY "usuarios_insert_admin" ON "sisencomendas"."usuarios" TO sisencomendas_app WITH CHECK (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor');--> statement-breakpoint
+ALTER POLICY "usuarios_update_admin" ON "sisencomendas"."usuarios" TO sisencomendas_app USING (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor') WITH CHECK (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor');--> statement-breakpoint
+ALTER POLICY "usuarios_delete_admin" ON "sisencomendas"."usuarios" TO sisencomendas_app USING (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor');--> statement-breakpoint
+ALTER POLICY "moradores_update_admin" ON "sisencomendas"."moradores" TO sisencomendas_app USING (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao')) WITH CHECK (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao'));--> statement-breakpoint
+ALTER POLICY "moradores_delete_admin" ON "sisencomendas"."moradores" TO sisencomendas_app USING (condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao'));

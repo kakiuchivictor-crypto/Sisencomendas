@@ -1,0 +1,1 @@
+ALTER TYPE "sisencomendas"."log_acao" ADD VALUE 'item_adicionado_lote' BEFORE 'correspondencia_criada';

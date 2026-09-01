@@ -1,0 +1,1 @@
+CREATE POLICY "encomendas_delete_desenvolvedor" ON "sisencomendas"."encomendas" AS PERMISSIVE FOR DELETE TO "sisencomendas_app" USING (condominio_id = sisencomendas.current_condominio_id() and status = 'entregue' and sisencomendas.current_usuario_role() = 'desenvolvedor');

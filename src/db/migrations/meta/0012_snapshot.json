@@ -1,0 +1,824 @@
+{
+  "id": "ddb6cb1a-51c6-4d1e-bac9-0d4a9b798bad",
+  "prevId": "50166c95-a993-4673-a293-f76059be96dc",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "auth.users": {
+      "name": "users",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "sisencomendas.condominios": {
+      "name": "condominios",
+      "schema": "sisencomendas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tema": {
+          "name": "tema",
+          "type": "tema",
+          "typeSchema": "sisencomendas",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'claro'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "condominios_select_own": {
+          "name": "condominios_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "id = sisencomendas.current_condominio_id()"
+        },
+        "condominios_update_admin": {
+          "name": "condominios_update_admin",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'",
+          "withCheck": "id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "sisencomendas.usuarios": {
+      "name": "usuarios",
+      "schema": "sisencomendas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "condominio_id": {
+          "name": "condominio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "usuario_role",
+          "typeSchema": "sisencomendas",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'porteiro'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "usuarios_condominio_idx": {
+          "name": "usuarios_condominio_idx",
+          "columns": [
+            {
+              "expression": "condominio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "usuarios_id_users_id_fk": {
+          "name": "usuarios_id_users_id_fk",
+          "tableFrom": "usuarios",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "usuarios_condominio_id_condominios_id_fk": {
+          "name": "usuarios_condominio_id_condominios_id_fk",
+          "tableFrom": "usuarios",
+          "tableTo": "condominios",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "condominio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "usuarios_email_unique": {
+          "name": "usuarios_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {
+        "usuarios_select_tenant": {
+          "name": "usuarios_select_tenant",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id()"
+        },
+        "usuarios_insert_admin": {
+          "name": "usuarios_insert_admin",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'"
+        },
+        "usuarios_update_admin": {
+          "name": "usuarios_update_admin",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'",
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'"
+        },
+        "usuarios_delete_admin": {
+          "name": "usuarios_delete_admin",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() = 'desenvolvedor'"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "sisencomendas.moradores": {
+      "name": "moradores",
+      "schema": "sisencomendas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "condominio_id": {
+          "name": "condominio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rua": {
+          "name": "rua",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero": {
+          "name": "numero",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "moradores_condominio_idx": {
+          "name": "moradores_condominio_idx",
+          "columns": [
+            {
+              "expression": "condominio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "moradores_nome_trgm_idx": {
+          "name": "moradores_nome_trgm_idx",
+          "columns": [
+            {
+              "expression": "nome",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "moradores_rua_trgm_idx": {
+          "name": "moradores_rua_trgm_idx",
+          "columns": [
+            {
+              "expression": "rua",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "moradores_condominio_id_condominios_id_fk": {
+          "name": "moradores_condominio_id_condominios_id_fk",
+          "tableFrom": "moradores",
+          "tableTo": "condominios",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "condominio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "moradores_select_tenant": {
+          "name": "moradores_select_tenant",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id()"
+        },
+        "moradores_insert_tenant": {
+          "name": "moradores_insert_tenant",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id()"
+        },
+        "moradores_update_admin": {
+          "name": "moradores_update_admin",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao')",
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao')"
+        },
+        "moradores_delete_admin": {
+          "name": "moradores_delete_admin",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id() and sisencomendas.current_usuario_role() in ('desenvolvedor', 'administracao')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "sisencomendas.encomendas": {
+      "name": "encomendas",
+      "schema": "sisencomendas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "lote_id": {
+          "name": "lote_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "condominio_id": {
+          "name": "condominio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "morador_id": {
+          "name": "morador_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rua": {
+          "name": "rua",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero": {
+          "name": "numero",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transportadora": {
+          "name": "transportadora",
+          "type": "transportadora",
+          "typeSchema": "sisencomendas",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transportadora_outro": {
+          "name": "transportadora_outro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_encomenda",
+          "typeSchema": "sisencomendas",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantidade": {
+          "name": "quantidade",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "codigo_rastreio": {
+          "name": "codigo_rastreio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nota_fiscal": {
+          "name": "nota_fiscal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observacoes": {
+          "name": "observacoes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "foto_url": {
+          "name": "foto_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "encomenda_status",
+          "typeSchema": "sisencomendas",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pendente'"
+        },
+        "recebida_por": {
+          "name": "recebida_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recebida_em": {
+          "name": "recebida_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "entregue_por": {
+          "name": "entregue_por",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entregue_em": {
+          "name": "entregue_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "encomendas_condominio_status_idx": {
+          "name": "encomendas_condominio_status_idx",
+          "columns": [
+            {
+              "expression": "condominio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "encomendas_morador_idx": {
+          "name": "encomendas_morador_idx",
+          "columns": [
+            {
+              "expression": "morador_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "encomendas_lote_idx": {
+          "name": "encomendas_lote_idx",
+          "columns": [
+            {
+              "expression": "lote_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "encomendas_rua_trgm_idx": {
+          "name": "encomendas_rua_trgm_idx",
+          "columns": [
+            {
+              "expression": "rua",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "encomendas_codigo_rastreio_trgm_idx": {
+          "name": "encomendas_codigo_rastreio_trgm_idx",
+          "columns": [
+            {
+              "expression": "codigo_rastreio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "encomendas_condominio_id_condominios_id_fk": {
+          "name": "encomendas_condominio_id_condominios_id_fk",
+          "tableFrom": "encomendas",
+          "tableTo": "condominios",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "condominio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "encomendas_morador_id_moradores_id_fk": {
+          "name": "encomendas_morador_id_moradores_id_fk",
+          "tableFrom": "encomendas",
+          "tableTo": "moradores",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "morador_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "encomendas_recebida_por_usuarios_id_fk": {
+          "name": "encomendas_recebida_por_usuarios_id_fk",
+          "tableFrom": "encomendas",
+          "tableTo": "usuarios",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "recebida_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "encomendas_entregue_por_usuarios_id_fk": {
+          "name": "encomendas_entregue_por_usuarios_id_fk",
+          "tableFrom": "encomendas",
+          "tableTo": "usuarios",
+          "schemaTo": "sisencomendas",
+          "columnsFrom": [
+            "entregue_por"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "encomendas_select_tenant": {
+          "name": "encomendas_select_tenant",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id()"
+        },
+        "encomendas_insert_tenant": {
+          "name": "encomendas_insert_tenant",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id()"
+        },
+        "encomendas_update_tenant": {
+          "name": "encomendas_update_tenant",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "sisencomendas_app"
+          ],
+          "using": "condominio_id = sisencomendas.current_condominio_id()",
+          "withCheck": "condominio_id = sisencomendas.current_condominio_id()"
+        }
+      },
+      "checkConstraints": {
+        "encomendas_quantidade_positive": {
+          "name": "encomendas_quantidade_positive",
+          "value": "\"sisencomendas\".\"encomendas\".\"quantidade\" >= 1"
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "sisencomendas.encomenda_status": {
+      "name": "encomenda_status",
+      "schema": "sisencomendas",
+      "values": [
+        "pendente",
+        "entregue"
+      ]
+    },
+    "sisencomendas.tema": {
+      "name": "tema",
+      "schema": "sisencomendas",
+      "values": [
+        "claro",
+        "escuro"
+      ]
+    },
+    "sisencomendas.tipo_encomenda": {
+      "name": "tipo_encomenda",
+      "schema": "sisencomendas",
+      "values": [
+        "caixa",
+        "pacote",
+        "envelope",
+        "documento",
+        "medicamento",
+        "carta",
+        "outros"
+      ]
+    },
+    "sisencomendas.transportadora": {
+      "name": "transportadora",
+      "schema": "sisencomendas",
+      "values": [
+        "correios",
+        "mercado_livre",
+        "amazon",
+        "shopee",
+        "jadlog",
+        "loggi",
+        "total_express",
+        "fedex",
+        "ups",
+        "dhl",
+        "outros"
+      ]
+    },
+    "sisencomendas.usuario_role": {
+      "name": "usuario_role",
+      "schema": "sisencomendas",
+      "values": [
+        "desenvolvedor",
+        "administracao",
+        "porteiro"
+      ]
+    }
+  },
+  "schemas": {
+    "sisencomendas": "sisencomendas",
+    "auth": "auth"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

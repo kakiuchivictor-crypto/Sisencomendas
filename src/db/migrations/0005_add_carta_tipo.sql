@@ -1,0 +1,1 @@
+ALTER TYPE "sisencomendas"."tipo_encomenda" ADD VALUE 'carta' BEFORE 'outros';

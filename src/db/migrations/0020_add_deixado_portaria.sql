@@ -1,0 +1,3 @@
+ALTER TABLE "sisencomendas"."encomendas" ADD COLUMN "deixado_portaria_por" uuid;--> statement-breakpoint
+ALTER TABLE "sisencomendas"."encomendas" ADD COLUMN "deixado_portaria_em" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "sisencomendas"."encomendas" ADD CONSTRAINT "encomendas_deixado_portaria_por_usuarios_id_fk" FOREIGN KEY ("deixado_portaria_por") REFERENCES "sisencomendas"."usuarios"("id") ON DELETE restrict ON UPDATE no action;
