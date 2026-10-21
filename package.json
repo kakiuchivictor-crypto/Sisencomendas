@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && serwist build serwist.config.ts",
+    "build": "next build --webpack && serwist build serwist.config.ts",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
@@ -58,5 +58,6 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5"
-  }
+  },
+  "//build": "build com --webpack: no Next 16.4.2 o Turbopack falha no Linux da Vercel ao resolver next/font/google (\"next/font/google queries have exactly one entry\"). Reavaliar ao atualizar o Next."
 }
