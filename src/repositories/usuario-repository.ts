@@ -59,7 +59,7 @@ export const usuarioRepository = {
       .returning()
 
     if (!usuario) {
-      throw new Error("Falha ao criar usuario")
+      throw new Error("Falha ao criar usuário")
     }
 
     return usuario

@@ -2,7 +2,7 @@ import { formatDateTime } from "@/lib/format"
 import { LOG_ACAO_LABELS } from "@/lib/labels"
 import type { LogAtividade } from "@/types/domain"
 
-const COLUMNS = ["Data/hora", "Usuario", "Acao", "Descricao"]
+const COLUMNS = ["Data/hora", "Usuário", "Ação", "Descrição"]
 
 function rowsFrom(logs: LogAtividade[]): string[][] {
   return logs.map((log) => [

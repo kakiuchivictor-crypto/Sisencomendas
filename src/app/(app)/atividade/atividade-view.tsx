@@ -64,7 +64,7 @@ export function AtividadeView({ initialLogs }: { initialLogs: LogAtividade[] }) 
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="to">Ate</Label>
+            <Label htmlFor="to">Até</Label>
             <input
               id="to"
               type="date"
@@ -79,7 +79,7 @@ export function AtividadeView({ initialLogs }: { initialLogs: LogAtividade[] }) 
               id="term"
               value={term}
               onChange={(event) => setTerm(event.target.value)}
-              placeholder="Usuario ou descricao..."
+              placeholder="Usuário ou descrição..."
             />
           </div>
         </CardContent>
@@ -110,9 +110,9 @@ export function AtividadeView({ initialLogs }: { initialLogs: LogAtividade[] }) 
           <TableHeader>
             <TableRow>
               <TableHead>Data/hora</TableHead>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Acao</TableHead>
-              <TableHead>Descricao</TableHead>
+              <TableHead>Usuário</TableHead>
+              <TableHead>Ação</TableHead>
+              <TableHead>Descrição</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

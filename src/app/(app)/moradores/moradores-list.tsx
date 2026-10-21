@@ -69,11 +69,11 @@ export function MoradoresList({
           return
         }
 
-        toast.success("Morador excluido.")
+        toast.success("Morador excluído.")
         setMoradorToDelete(null)
         void refetch()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel excluir o morador."))
+        toast.error(offlineAwareErrorMessage("Não foi possível excluir o morador."))
       }
     })
   }
@@ -114,9 +114,9 @@ export function MoradoresList({
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Rua</TableHead>
-              <TableHead>Numero</TableHead>
-              <TableHead>Observacoes</TableHead>
-              {canManage && <TableHead className="w-0">Acoes</TableHead>}
+              <TableHead>Número</TableHead>
+              <TableHead>Observações</TableHead>
+              {canManage && <TableHead className="w-0">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,8 +187,8 @@ export function MoradoresList({
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir morador?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acao remove {moradorToDelete?.nome} da lista de moradores.
-              Nao sera possivel excluir se ja houver encomendas registradas
+              Esta ação remove {moradorToDelete?.nome} da lista de moradores.
+              Não será possível excluir se já houver encomendas registradas
               para ele.
             </AlertDialogDescription>
           </AlertDialogHeader>

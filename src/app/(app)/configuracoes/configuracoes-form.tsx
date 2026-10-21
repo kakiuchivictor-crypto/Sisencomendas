@@ -48,10 +48,10 @@ export function ConfiguracoesForm({ condominio }: { condominio: Condominio }) {
           return
         }
 
-        toast.success("Configuracoes atualizadas.")
+        toast.success("Configurações atualizadas.")
         setTheme(values.tema === "escuro" ? "dark" : "light")
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel salvar as configuracoes."))
+        toast.error(offlineAwareErrorMessage("Não foi possível salvar as configurações."))
       }
     })
   }
@@ -64,7 +64,7 @@ export function ConfiguracoesForm({ condominio }: { condominio: Condominio }) {
           name="nome"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do condominio</FormLabel>
+              <FormLabel>Nome do condomínio</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -78,7 +78,7 @@ export function ConfiguracoesForm({ condominio }: { condominio: Condominio }) {
           name="tema"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tema padrao</FormLabel>
+              <FormLabel>Tema padrão</FormLabel>
               <Select value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
@@ -100,7 +100,7 @@ export function ConfiguracoesForm({ condominio }: { condominio: Condominio }) {
         />
 
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Salvando..." : "Salvar configuracoes"}
+          {isPending ? "Salvando..." : "Salvar configurações"}
         </Button>
       </form>
     </Form>

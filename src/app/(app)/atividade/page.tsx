@@ -29,7 +29,7 @@ export default async function AtividadePage() {
       <div>
         <h1 className="text-2xl font-semibold">Atividade</h1>
         <p className="text-muted-foreground text-sm">
-          Historico de acoes realizadas pelos usuarios do sistema.
+          Histórico de ações realizadas pelos usuários do sistema.
         </p>
       </div>
       <AtividadeView initialLogs={initialLogs} />

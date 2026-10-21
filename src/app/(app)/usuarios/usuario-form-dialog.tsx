@@ -100,11 +100,11 @@ function UsuarioCreateForm({
           return
         }
 
-        toast.success("Usuario cadastrado com sucesso.")
+        toast.success("Usuário cadastrado com sucesso.")
         onOpenChange(false)
         onSuccess?.(result.usuario)
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel cadastrar o usuario."))
+        toast.error(offlineAwareErrorMessage("Não foi possível cadastrar o usuário."))
       }
     })
   }
@@ -112,9 +112,9 @@ function UsuarioCreateForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Cadastrar usuario</DialogTitle>
+        <DialogTitle>Cadastrar usuário</DialogTitle>
         <DialogDescription>
-          O usuario podera entrar com o email e a senha definidos aqui.
+          O usuário poderá entrar com o e-mail e a senha definidos aqui.
         </DialogDescription>
       </DialogHeader>
 
@@ -127,7 +127,7 @@ function UsuarioCreateForm({
               <FormItem>
                 <FormLabel>Nome</FormLabel>
                 <FormControl>
-                  <Input autoFocus placeholder="Nome do usuario" {...field} />
+                  <Input autoFocus placeholder="Nome do usuário" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -139,7 +139,7 @@ function UsuarioCreateForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>E-mail</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="email@exemplo.com" {...field} />
                 </FormControl>
@@ -167,7 +167,7 @@ function UsuarioCreateForm({
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Funcao</FormLabel>
+                <FormLabel>Função</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -236,11 +236,11 @@ function UsuarioEditForm({
           return
         }
 
-        toast.success("Usuario atualizado.")
+        toast.success("Usuário atualizado.")
         onOpenChange(false)
         onSuccess?.(result.usuario)
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel atualizar o usuario."))
+        toast.error(offlineAwareErrorMessage("Não foi possível atualizar o usuário."))
       }
     })
   }
@@ -248,7 +248,7 @@ function UsuarioEditForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Editar usuario</DialogTitle>
+        <DialogTitle>Editar usuário</DialogTitle>
         <DialogDescription>{usuario.email}</DialogDescription>
       </DialogHeader>
 
@@ -261,7 +261,7 @@ function UsuarioEditForm({
               <FormItem>
                 <FormLabel>Nome</FormLabel>
                 <FormControl>
-                  <Input autoFocus placeholder="Nome do usuario" {...field} />
+                  <Input autoFocus placeholder="Nome do usuário" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -273,7 +273,7 @@ function UsuarioEditForm({
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Funcao</FormLabel>
+                <FormLabel>Função</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger className="w-full">

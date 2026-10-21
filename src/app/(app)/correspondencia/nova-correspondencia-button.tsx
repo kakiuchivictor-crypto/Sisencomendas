@@ -16,7 +16,7 @@ export function NovaCorrespondenciaButton() {
     <>
       <Button size="lg" onClick={() => setOpen(true)}>
         <Plus />
-        Nova correspondencia
+        Nova correspondência
       </Button>
 
       <CorrespondenciaFormDialog

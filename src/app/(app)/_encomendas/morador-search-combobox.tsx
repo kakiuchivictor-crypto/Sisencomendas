@@ -64,7 +64,9 @@ export function MoradorSearchCombobox({
             onValueChange={setSearch}
             autoFocus
           />
-          <CommandList>
+          {/* Barra de rolagem visível: com muitos moradores o porteiro precisa
+              perceber que a lista continua abaixo. */}
+          <CommandList scrollVisivel>
             {isFetching && moradores === undefined && (
               <div className="space-y-1.5 p-2">
                 <Skeleton className="h-9 w-full" />

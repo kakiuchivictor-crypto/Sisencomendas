@@ -20,6 +20,11 @@ import type { Remetente } from "@/types/domain"
 
 import { createRemetenteAction, listRemetentesAction } from "./actions"
 
+// Ordem alfabética em pt-BR ignorando maiúsculas/acentos: a ordenação do banco
+// (asc(nome)) depende da collation e pode jogar "árvore" ou nomes em minúsculas
+// para o fim da lista.
+const COLLATOR_NOME = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true })
+
 export function RemetenteCombobox({
   value,
   onChange,
@@ -42,7 +47,7 @@ export function RemetenteCombobox({
     enabled: open,
   })
 
-  const list = remetentes ?? []
+  const list = [...(remetentes ?? [])].sort((a, b) => COLLATOR_NOME.compare(a.nome, b.nome))
   const termo = search.trim().toLocaleLowerCase("pt-BR")
   const filtered = termo
     ? list.filter((remetente) =>
@@ -71,7 +76,7 @@ export function RemetenteCombobox({
       setOpen(false)
       setSearch("")
     } catch {
-      toast.error(offlineAwareErrorMessage("Nao foi possivel cadastrar o remetente."))
+      toast.error(offlineAwareErrorMessage("Não foi possível cadastrar o remetente."))
     } finally {
       setCreating(false)
     }
@@ -96,7 +101,10 @@ export function RemetenteCombobox({
             onValueChange={setSearch}
             autoFocus
           />
-          <CommandList>
+          {/* Lista mais alta e com barra de rolagem visível: o CommandList
+              padrão esconde a barra (no-scrollbar) e o porteiro não percebia
+              que havia mais remetentes abaixo. */}
+          <CommandList scrollVisivel>
             {filtered.length === 0 && (
               <CommandEmpty className="text-muted-foreground py-6 text-center text-sm">
                 Nenhum remetente encontrado.

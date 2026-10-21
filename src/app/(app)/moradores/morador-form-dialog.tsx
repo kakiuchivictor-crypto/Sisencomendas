@@ -112,7 +112,7 @@ function MoradorForm({
         onOpenChange(false)
         onSuccess?.(result.morador)
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel salvar o morador."))
+        toast.error(offlineAwareErrorMessage("Não foi possível salvar o morador."))
       }
     })
   }
@@ -124,8 +124,8 @@ function MoradorForm({
           {mode === "edit" ? "Editar morador" : "Cadastrar morador"}
         </DialogTitle>
         <DialogDescription>
-          Preencha os dados basicos do morador. Nome, rua e numero sao
-          obrigatorios.
+          Preencha os dados básicos do morador. Nome, rua e número são
+          obrigatórios.
         </DialogDescription>
       </DialogHeader>
 
@@ -167,7 +167,7 @@ function MoradorForm({
               name="numero"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Numero</FormLabel>
+                  <FormLabel>Número</FormLabel>
                   <FormControl>
                     <Input placeholder="123" {...field} />
                   </FormControl>
@@ -182,10 +182,10 @@ function MoradorForm({
             name="observacoes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
+                <FormLabel>Observações (opcional)</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Ex: portao dos fundos, cachorro no quintal..."
+                    placeholder="Ex: portão dos fundos, cachorro no quintal..."
                     {...field}
                     value={field.value ?? ""}
                   />

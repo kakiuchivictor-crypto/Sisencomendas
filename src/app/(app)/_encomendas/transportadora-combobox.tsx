@@ -177,7 +177,7 @@ export function TransportadoraCombobox({
           {/* Lista mais alta e com barra de rolagem visivel: o CommandList
               padrao esconde a barra (no-scrollbar) e o porteiro nao percebia
               que havia mais opcoes abaixo das fixas. */}
-          <CommandList className="max-h-80 [scrollbar-width:thin]! [&::-webkit-scrollbar]:block! [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+          <CommandList scrollVisivel>
             {nada && (
               <CommandEmpty className="text-muted-foreground py-6 text-center text-sm">
                 {TRANSPORTADORA_COMBOBOX_LABELS.vazio}

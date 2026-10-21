@@ -65,7 +65,7 @@ export function EntreguesList({
         <PackageCheck className="size-8" />
         <p>
           {categoria === "correspondencia"
-            ? "Nenhuma correspondencia entregue ainda."
+            ? "Nenhuma correspondência entregue ainda."
             : "Nenhuma encomenda entregue ainda."}
         </p>
       </div>

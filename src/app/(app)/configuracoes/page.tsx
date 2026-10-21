@@ -33,9 +33,9 @@ export default async function ConfiguracoesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Configuracoes</h1>
+        <h1 className="text-2xl font-semibold">Configurações</h1>
         <p className="text-muted-foreground text-sm">
-          Personalize o nome e o tema padrao do condominio.
+          Personalize o nome e o tema padrão do condomínio.
         </p>
       </div>
       <ConfiguracoesForm condominio={condominio} />

@@ -29,7 +29,7 @@ export default async function UsuariosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
+        <h1 className="text-2xl font-semibold">Usuários</h1>
         <p className="text-muted-foreground text-sm">
           Gerencie administradores e porteiros com acesso ao sistema.
         </p>

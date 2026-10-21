@@ -340,7 +340,7 @@ function EnderecoFields({
         name="numero"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Numero</FormLabel>
+            <FormLabel>Número</FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
@@ -420,7 +420,7 @@ function CreateEncomendaForm({
           onOpenChange(false)
         }
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel registrar a encomenda."))
+        toast.error(offlineAwareErrorMessage("Não foi possível registrar a encomenda."))
       } finally {
         submittingRef.current = false
       }
@@ -432,7 +432,7 @@ function CreateEncomendaForm({
       <DialogHeader className={FORM_HEADER_CLASSNAME}>
         <DialogTitle className={FORM_TITLE_CLASSNAME}>Cadastrar encomenda</DialogTitle>
         <DialogDescription>
-          Busque o morador, confira o endereco e adicione um ou mais itens.
+          Busque o morador, confira o endereço e adicione um ou mais itens.
         </DialogDescription>
       </DialogHeader>
 
@@ -490,7 +490,7 @@ function CreateEncomendaForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Observacoes <OpcionalHint />
+                    Observações <OpcionalHint />
                   </FormLabel>
                   <FormControl>
                     <Textarea
@@ -611,7 +611,7 @@ function EditEncomendaForm({
         onOpenChange(false)
         onSuccess?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel atualizar a encomenda."))
+        toast.error(offlineAwareErrorMessage("Não foi possível atualizar a encomenda."))
       } finally {
         submittingRef.current = false
       }
@@ -628,7 +628,7 @@ function EditEncomendaForm({
       <DialogHeader className={FORM_HEADER_CLASSNAME}>
         <DialogTitle className={FORM_TITLE_CLASSNAME}>Editar encomenda</DialogTitle>
         <DialogDescription>
-          Busque o morador, confira o endereco e escolha a transportadora.
+          Busque o morador, confira o endereço e escolha a transportadora.
         </DialogDescription>
       </DialogHeader>
 
@@ -706,7 +706,7 @@ function EditEncomendaForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Observacoes <OpcionalHint />
+                    Observações <OpcionalHint />
                   </FormLabel>
                   <FormControl>
                     <Textarea

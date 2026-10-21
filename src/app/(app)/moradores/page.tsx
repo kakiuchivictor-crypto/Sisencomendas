@@ -31,8 +31,8 @@ export default async function MoradoresPage() {
         <h1 className="text-2xl font-semibold">Moradores</h1>
         <p className="text-muted-foreground text-sm">
           {canManage
-            ? "Cadastre e gerencie os moradores do condominio."
-            : "Cadastre moradores. Edicao e exclusao ficam com o administrador."}
+            ? "Cadastre e gerencie os moradores do condomínio."
+            : "Cadastre moradores. Edição e exclusão ficam com o administrador."}
         </p>
       </div>
       <MoradoresList initialMoradores={moradores} canManage={canManage} />

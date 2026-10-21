@@ -27,9 +27,9 @@ export default async function RelatoriosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Relatorios</h1>
+        <h1 className="text-2xl font-semibold">Relatórios</h1>
         <p className="text-muted-foreground text-sm">
-          Analise encomendas por periodo, transportadora ou morador.
+          Analise encomendas por período, transportadora ou morador.
         </p>
       </div>
       <RelatorioView initialResult={initialResult} />

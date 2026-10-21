@@ -68,11 +68,11 @@ export function UsuariosList({
           return
         }
 
-        toast.success("Usuario excluido.")
+        toast.success("Usuário excluído.")
         setUsuarioToDelete(null)
         void refetch()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel excluir o usuario."))
+        toast.error(offlineAwareErrorMessage("Não foi possível excluir o usuário."))
       }
     })
   }
@@ -84,7 +84,7 @@ export function UsuariosList({
       <div className="flex justify-end">
         <Button onClick={() => setFormState({ open: true, mode: "create" })}>
           <Plus />
-          Novo usuario
+          Novo usuário
         </Button>
       </div>
 
@@ -93,9 +93,9 @@ export function UsuariosList({
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Funcao</TableHead>
-              <TableHead className="w-0">Acoes</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Função</TableHead>
+              <TableHead className="w-0">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,7 +104,7 @@ export function UsuariosList({
                 <TableCell className="font-medium">
                   {usuario.nome}
                   {usuario.id === currentUserId && (
-                    <span className="text-muted-foreground"> (voce)</span>
+                    <span className="text-muted-foreground"> (você)</span>
                   )}
                 </TableCell>
                 <TableCell>{usuario.email}</TableCell>
@@ -116,7 +116,7 @@ export function UsuariosList({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Editar usuario"
+                      aria-label="Editar usuário"
                       onClick={() => setFormState({ open: true, mode: "edit", usuario })}
                     >
                       <Pencil />
@@ -124,7 +124,7 @@ export function UsuariosList({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Excluir usuario"
+                      aria-label="Excluir usuário"
                       className="hover:text-destructive"
                       disabled={usuario.id === currentUserId}
                       onClick={() => setUsuarioToDelete(usuario)}
@@ -155,10 +155,10 @@ export function UsuariosList({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir usuario?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acao remove o acesso de {usuarioToDelete?.nome} ao sistema. Nao
-              sera possivel excluir se ja houver encomendas registradas por ele.
+              Esta ação remove o acesso de {usuarioToDelete?.nome} ao sistema. Não
+              será possível excluir se já houver encomendas registradas por ele.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

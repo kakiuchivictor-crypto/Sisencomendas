@@ -5,7 +5,7 @@ import type { EncomendaComDetalhes } from "@/types/domain"
 
 const COLUMNS = [
   "Morador",
-  "Endereco",
+  "Endereço",
   "Transportadora",
   "Tipo",
   "Qtd.",
@@ -61,7 +61,7 @@ export async function exportToPdf(encomendas: EncomendaComDetalhes[]): Promise<v
   const doc = new jsPDF({ orientation: "landscape" })
 
   doc.setFontSize(14)
-  doc.text("Relatorio de Encomendas", 14, 15)
+  doc.text("Relatório de Encomendas", 14, 15)
   doc.setFontSize(9)
   doc.text(`Gerado em ${formatDateTime(new Date())}`, 14, 21)
 

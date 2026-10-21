@@ -6,7 +6,7 @@
  */
 export function offlineAwareErrorMessage(fallback: string): string {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
-    return "Sem conexao com a internet. Tente novamente quando a conexao voltar."
+    return "Sem conexão com a internet. Tente novamente quando a conexão voltar."
   }
   return fallback
 }

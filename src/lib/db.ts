@@ -8,7 +8,7 @@ import type { UsuarioRole } from "@/lib/labels"
 const DATABASE_URL = process.env.DATABASE_URL
 
 if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL nao definida")
+  throw new Error("DATABASE_URL não definida")
 }
 
 const globalForDb = globalThis as unknown as {

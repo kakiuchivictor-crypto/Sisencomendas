@@ -89,15 +89,28 @@ function CommandInput({
   )
 }
 
+/**
+ * Lista mais alta e com barra de rolagem visível: o padrão esconde a barra
+ * (no-scrollbar) e, em listas longas (transportadoras, remetentes, moradores),
+ * o porteiro não percebia que havia mais opções abaixo.
+ */
+const COMMAND_LIST_SCROLL_VISIVEL =
+  "max-h-80 [scrollbar-width:thin]! [&::-webkit-scrollbar]:block! [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+
 function CommandList({
   className,
+  scrollVisivel = false,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.List>) {
+}: React.ComponentProps<typeof CommandPrimitive.List> & {
+  /** Mostra a barra de rolagem e aumenta a altura máxima (listas longas). */
+  scrollVisivel?: boolean
+}) {
   return (
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
         "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        scrollVisivel && COMMAND_LIST_SCROLL_VISIVEL,
         className
       )}
       {...props}

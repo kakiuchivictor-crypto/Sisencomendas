@@ -156,11 +156,11 @@ function CreateCorrespondenciaForm({
           return
         }
 
-        toast.success("Correspondencia cadastrada com sucesso.")
+        toast.success("Correspondência cadastrada com sucesso.")
         onOpenChange(false)
         onSuccess?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel registrar a correspondencia."))
+        toast.error(offlineAwareErrorMessage("Não foi possível registrar a correspondência."))
       }
     })
   }
@@ -168,7 +168,7 @@ function CreateCorrespondenciaForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Cadastrar correspondencia</DialogTitle>
+        <DialogTitle>Cadastrar correspondência</DialogTitle>
         <DialogDescription>
           Busque o morador, informe quantas cartas chegaram e a nota fiscal ou o rastreio.
         </DialogDescription>
@@ -217,7 +217,7 @@ function CreateCorrespondenciaForm({
               name="numero"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Numero</FormLabel>
+                  <FormLabel>Número</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -271,7 +271,7 @@ function CreateCorrespondenciaForm({
             name="observacoes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
+                <FormLabel>Observações (opcional)</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Ex: carta registrada..." {...field} />
                 </FormControl>
@@ -375,11 +375,11 @@ function EditCorrespondenciaForm({
           return
         }
 
-        toast.success("Correspondencia atualizada.")
+        toast.success("Correspondência atualizada.")
         onOpenChange(false)
         onSuccess?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel atualizar a correspondencia."))
+        toast.error(offlineAwareErrorMessage("Não foi possível atualizar a correspondência."))
       }
     })
   }
@@ -387,9 +387,9 @@ function EditCorrespondenciaForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Editar correspondencia</DialogTitle>
+        <DialogTitle>Editar correspondência</DialogTitle>
         <DialogDescription>
-          Busque o morador, confira o endereco e o remetente.
+          Busque o morador, confira o endereço e o remetente.
         </DialogDescription>
       </DialogHeader>
 
@@ -436,7 +436,7 @@ function EditCorrespondenciaForm({
               name="numero"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Numero</FormLabel>
+                  <FormLabel>Número</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -491,7 +491,7 @@ function EditCorrespondenciaForm({
             name="observacoes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
+                <FormLabel>Observações (opcional)</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Ex: carta registrada..." {...field} />
                 </FormControl>

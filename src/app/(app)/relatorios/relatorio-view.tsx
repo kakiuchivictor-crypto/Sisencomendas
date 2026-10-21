@@ -106,7 +106,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
         <CardHeader>
           <CardTitle className="text-base">Filtros</CardTitle>
           <CardDescription>
-            Combine periodo, transportadora, morador e status para refinar o relatorio.
+            Combine período, transportadora, morador e status para refinar o relatório.
           </CardDescription>
           {hasFilters && (
             <CardAction>
@@ -134,7 +134,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="to">Ate</Label>
+            <Label htmlFor="to">Até</Label>
             <input
               id="to"
               type="date"
@@ -218,7 +218,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardDescription>Total no periodo</CardDescription>
+            <CardDescription>Total no período</CardDescription>
             <CardTitle className="font-mono text-3xl font-semibold tabular-nums">
               {list.length}
             </CardTitle>
@@ -242,7 +242,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Tempo medio de retirada</CardDescription>
+            <CardDescription>Tempo médio de retirada</CardDescription>
             <CardTitle className="font-mono text-2xl font-semibold tabular-nums">
               {result.tempoMedioSegundos !== null
                 ? formatDurationSeconds(result.tempoMedioSegundos)
@@ -288,7 +288,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
           <TableHeader>
             <TableRow>
               <TableHead>Morador</TableHead>
-              <TableHead>Endereco</TableHead>
+              <TableHead>Endereço</TableHead>
               <TableHead>Transportadora</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Qtd.</TableHead>
@@ -306,7 +306,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
             {list.length === 0 && (
               <TableRow>
                 <TableCell colSpan={13} className="text-muted-foreground h-24 text-center">
-                  Nenhuma encomenda no periodo selecionado.
+                  Nenhuma encomenda no período selecionado.
                 </TableCell>
               </TableRow>
             )}

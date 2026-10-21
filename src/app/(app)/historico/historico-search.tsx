@@ -102,7 +102,7 @@ export function HistoricoSearch({
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar por morador, rua, numero ou transportadora..."
+          placeholder="Buscar por morador, rua, número ou transportadora..."
           className="pl-8"
           autoFocus
         />

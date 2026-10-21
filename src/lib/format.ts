@@ -32,18 +32,18 @@ export function formatDurationSince(date: Date | string): string {
   const diffDays = diasDesde(date)
 
   if (diffDays >= 1) {
-    return `ha ${diffDays} dia${diffDays > 1 ? "s" : ""}`
+    return `há ${diffDays} dia${diffDays > 1 ? "s" : ""}`
   }
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
 
   if (diffHours >= 1) {
-    return `ha ${diffHours}h`
+    return `há ${diffHours}h`
   }
 
   const diffMinutes = Math.max(1, Math.floor(diffMs / (1000 * 60)))
 
-  return `ha ${diffMinutes}min`
+  return `há ${diffMinutes}min`
 }
 
 export function formatDurationSeconds(totalSeconds: number): string {

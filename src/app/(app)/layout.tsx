@@ -54,14 +54,14 @@ export default async function AppLayout({
   // Relatorios aparece como aba so para administracao/desenvolvedor (mesma
   // regra do redirect em relatorios/page.tsx).
   const relatoriosItem: NavItem[] = isAdminLike(usuario.role)
-    ? [{ href: "/relatorios", label: "Relatorios" }]
+    ? [{ href: "/relatorios", label: "Relatórios" }]
     : []
 
   const navItems: NavItem[] = [
     { href: "/", label: "Pendentes", countKey: "encomendas" },
     { href: "/entregues", label: "Entregues" },
-    { href: "/historico", label: "Historico" },
-    { href: "/correspondencia", label: "Correspondencia", countKey: "correspondencias" },
+    { href: "/historico", label: "Histórico" },
+    { href: "/correspondencia", label: "Correspondência", countKey: "correspondencias" },
     { href: "/moradores", label: "Moradores" },
     ...relatoriosItem,
   ]
@@ -71,8 +71,8 @@ export default async function AppLayout({
     ...(usuario.role === "desenvolvedor"
       ? [
           { href: "/atividade", label: "Atividade" },
-          { href: "/usuarios", label: "Usuarios" },
-          { href: "/configuracoes", label: "Configuracoes" },
+          { href: "/usuarios", label: "Usuários" },
+          { href: "/configuracoes", label: "Configurações" },
         ]
       : []),
   ]
@@ -92,7 +92,7 @@ export default async function AppLayout({
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-28 sm:pb-10">{children}</main>
       <BottomNav
         moreItems={[
-          { href: "/historico", label: "Historico" },
+          { href: "/historico", label: "Histórico" },
           ...relatoriosItem,
           ...adminMenuItems,
         ]}

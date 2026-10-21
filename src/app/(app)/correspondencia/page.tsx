@@ -34,7 +34,7 @@ export default async function CorrespondenciaPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Correspondencia</h1>
+          <h1 className="text-2xl font-semibold">Correspondência</h1>
           <p className="text-muted-foreground text-sm">
             Cartas registradas para os moradores, separadas das encomendas.
           </p>

@@ -295,7 +295,7 @@ export function PendentesList({
         <Package className="size-8" />
         <p>
           {categoria === "correspondencia"
-            ? "Nenhuma correspondencia pendente."
+            ? "Nenhuma correspondência pendente."
             : "Nenhuma encomenda pendente."}
         </p>
         {categoria === "correspondencia" ? (
@@ -329,7 +329,7 @@ export function PendentesList({
           : "Nenhuma encomenda pendente."
 
   const editarLabel =
-    categoria === "correspondencia" ? "Editar correspondencia" : "Editar encomenda"
+    categoria === "correspondencia" ? "Editar correspondência" : "Editar encomenda"
   const temMaisAcoes = allowEdit || canManagePortaria
 
   return (
@@ -394,7 +394,7 @@ export function PendentesList({
             <span>Morador</span>
             <span>Origem e itens</span>
             <span>Recebida</span>
-            <span className="text-right">Acao</span>
+            <span className="text-right">Ação</span>
           </div>
 
           <ul>
@@ -535,8 +535,8 @@ export function PendentesList({
                             buttonVariants({ variant: "ghost", size: "icon" }),
                             "max-md:size-11"
                           )}
-                          aria-label="Mais acoes"
-                          title="Mais acoes"
+                          aria-label="Mais ações"
+                          title="Mais ações"
                         >
                           <Ellipsis />
                         </DropdownMenuTrigger>

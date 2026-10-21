@@ -30,7 +30,7 @@ export function AdminMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         className={buttonVariants({ variant: "ghost", size: "icon" })}
-        aria-label="Menu de administracao"
+        aria-label="Menu de administração"
       >
         <Settings />
       </DropdownMenuTrigger>

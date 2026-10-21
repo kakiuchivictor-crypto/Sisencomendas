@@ -68,7 +68,7 @@ export function EncomendaDetalheCard({
         setConfirmOpen(false)
         onReverted?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel reverter a entrega."))
+        toast.error(offlineAwareErrorMessage("Não foi possível reverter a entrega."))
       }
     })
   }
@@ -83,11 +83,11 @@ export function EncomendaDetalheCard({
           return
         }
 
-        toast.success(itens.length > 1 ? "Itens excluidos." : "Encomenda excluida.")
+        toast.success(itens.length > 1 ? "Itens excluídos." : "Encomenda excluída.")
         setDeleteConfirmOpen(false)
         onDeleted?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel excluir."))
+        toast.error(offlineAwareErrorMessage("Não foi possível excluir."))
       }
     })
   }
@@ -186,7 +186,7 @@ export function EncomendaDetalheCard({
                 )}
               </p>
             ) : (
-              <p className="text-muted-foreground">Ainda nao entregue</p>
+              <p className="text-muted-foreground">Ainda não entregue</p>
             )}
           </div>
 
@@ -228,7 +228,7 @@ export function EncomendaDetalheCard({
             </AlertDialogTitle>
             <AlertDialogDescription>
               A entrega de {encomenda.moradorNome} registrada por{" "}
-              {encomenda.entreguePorNome} sera desfeita e{" "}
+              {encomenda.entreguePorNome} será desfeita e{" "}
               {itens.length > 1 ? "os itens voltam" : "a encomenda volta"} a
               aparecer como pendente.
             </AlertDialogDescription>
@@ -250,9 +250,9 @@ export function EncomendaDetalheCard({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {itens.length > 1
-                ? `Os ${itens.length} itens de ${encomenda.moradorNome} serao excluidos`
-                : `A encomenda de ${encomenda.moradorNome} sera excluida`}{" "}
-              permanentemente. Essa acao nao pode ser desfeita.
+                ? `Os ${itens.length} itens de ${encomenda.moradorNome} serão excluídos`
+                : `A encomenda de ${encomenda.moradorNome} será excluída`}{" "}
+              permanentemente. Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

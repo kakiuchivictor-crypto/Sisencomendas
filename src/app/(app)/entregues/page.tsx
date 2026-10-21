@@ -28,7 +28,7 @@ export default async function EntreguesPage() {
       <div>
         <h1 className="text-2xl font-semibold">Entregues</h1>
         <p className="text-muted-foreground text-sm">
-          Encomendas ja entregues aos moradores.
+          Encomendas já entregues aos moradores.
         </p>
       </div>
       <EntreguesList

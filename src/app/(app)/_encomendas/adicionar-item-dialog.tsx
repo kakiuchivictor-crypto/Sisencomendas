@@ -135,7 +135,7 @@ function AdicionarEncomendaItemForm({
         onOpenChange(false)
         onSuccess?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel adicionar o item."))
+        toast.error(offlineAwareErrorMessage("Não foi possível adicionar o item."))
       }
     })
   }
@@ -145,7 +145,7 @@ function AdicionarEncomendaItemForm({
       <DialogHeader>
         <DialogTitle>Adicionar item</DialogTitle>
         <DialogDescription>
-          O item novo entra no mesmo lote, com sua propria data e quem registrou.
+          O item novo entra no mesmo lote, com sua própria data e quem registrou.
         </DialogDescription>
       </DialogHeader>
 
@@ -218,7 +218,7 @@ function AdicionarEncomendaItemForm({
             name="observacoes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
+                <FormLabel>Observações (opcional)</FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Ex: caixa grande, precisa assinar..."
@@ -293,7 +293,7 @@ function AdicionarCorrespondenciaItemForm({
         onOpenChange(false)
         onSuccess?.()
       } catch {
-        toast.error(offlineAwareErrorMessage("Nao foi possivel adicionar o item."))
+        toast.error(offlineAwareErrorMessage("Não foi possível adicionar o item."))
       }
     })
   }
@@ -303,7 +303,7 @@ function AdicionarCorrespondenciaItemForm({
       <DialogHeader>
         <DialogTitle>Adicionar item</DialogTitle>
         <DialogDescription>
-          O item novo entra no mesmo lote, com sua propria data e quem registrou.
+          O item novo entra no mesmo lote, com sua própria data e quem registrou.
         </DialogDescription>
       </DialogHeader>
 

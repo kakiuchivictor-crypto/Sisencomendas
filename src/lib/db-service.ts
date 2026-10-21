@@ -6,7 +6,7 @@ import * as schema from "@/db/schema"
 const SERVICE_DATABASE_URL = process.env.MIGRATION_DATABASE_URL
 
 if (!SERVICE_DATABASE_URL) {
-  throw new Error("MIGRATION_DATABASE_URL nao definida")
+  throw new Error("MIGRATION_DATABASE_URL não definida")
 }
 
 const globalForDb = globalThis as unknown as {
