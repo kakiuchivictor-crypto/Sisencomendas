@@ -54,12 +54,35 @@ export const TRANSPORTADORA_OPTIONS = TRANSPORTADORA_VALUES.map((value) => ({
   label: TRANSPORTADORA_LABELS[value],
 }))
 
+/** Transportadora fixa "de verdade" (tudo menos o curinga "outros"). */
+export type TransportadoraFixa = Exclude<Transportadora, "outros">
+
+/**
+ * Fixas sem "Outros": no combobox, "Outros" deixa de ser opção — nomes
+ * personalizados vêm do catálogo do condomínio (ver lib/transportadoras.ts).
+ */
+export const TRANSPORTADORA_FIXA_OPTIONS = TRANSPORTADORA_OPTIONS.filter(
+  (option): option is { value: TransportadoraFixa; label: string } =>
+    option.value !== "outros"
+)
+
+export const TRANSPORTADORA_COMBOBOX_LABELS = {
+  placeholder: "Selecione a transportadora...",
+  buscar: "Buscar ou cadastrar transportadora...",
+  vazio: "Nenhuma transportadora encontrada.",
+  grupoFixas: "Principais",
+  grupoCadastradas: "Cadastradas no condomínio",
+  /** Filtro de relatório: "outros" = qualquer transportadora personalizada. */
+  filtroOutras: "Outras (todas as personalizadas)",
+  adicionar: (nome: string) => `Adicionar transportadora “${nome}”`,
+} as const
+
 /** Nula pra "carta" (correspondencia usa remetente em vez de transportadora). */
 export function transportadoraLabel(
   transportadora: Transportadora | null,
   transportadoraOutro: string | null
 ): string {
-  if (!transportadora) return "—"
+  if (!transportadora) return "-"
   if (transportadora === "outros" && transportadoraOutro) return transportadoraOutro
   return TRANSPORTADORA_LABELS[transportadora]
 }
@@ -76,6 +99,13 @@ export const TIPO_ENCOMENDA_OPTIONS = TIPO_ENCOMENDA_VALUES.map((value) => ({
 export const TIPO_ENCOMENDA_OPTIONS_SEM_CARTA = TIPO_ENCOMENDA_OPTIONS.filter(
   (option) => option.value !== "carta"
 )
+
+/** Rotulos/dica dos campos de identificacao do item (regra em schemas/identificacao.ts). */
+export const IDENTIFICACAO_LABELS = {
+  codigoRastreio: "Código de rastreio",
+  notaFiscal: "Nota fiscal",
+  dica: "Preencha pelo menos um: nota fiscal ou rastreio.",
+} as const
 
 /**
  * "desenvolvedor" e o nome interno (banco/codigo) do antigo "admin" — so o

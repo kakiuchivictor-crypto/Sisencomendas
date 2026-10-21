@@ -10,7 +10,23 @@ import {
   encomendaCreateSchema,
   encomendaUpdateSchema,
 } from "@/schemas/encomenda"
-import { isAdminLike, type TipoEncomenda, type Transportadora } from "@/lib/labels"
+import {
+  IDENTIFICACAO_OBRIGATORIA_MENSAGEM,
+  mensagemErroIdentificacao,
+  temIdentificacao,
+} from "@/schemas/identificacao"
+import { isCheckViolation, isUniqueViolation } from "@/lib/db-errors"
+import {
+  isAdminLike,
+  type TipoEncomenda,
+  type Transportadora,
+  type TransportadoraFixa,
+} from "@/lib/labels"
+import {
+  TRANSPORTADORAS_TETO_POR_CONDOMINIO,
+  casarTransportadoraFixa,
+  normalizarNomeTransportadora,
+} from "@/lib/transportadoras"
 import {
   ENCOMENDAS_PAGE_SIZE,
   encomendaRepository,
@@ -18,8 +34,23 @@ import {
 } from "@/repositories/encomenda-repository"
 import { logRepository } from "@/repositories/log-repository"
 import { moradorRepository } from "@/repositories/morador-repository"
+import { transportadoraRepository } from "@/repositories/transportadora-repository"
+import {
+  desdeParamSchema,
+  encomendaCategoriaParamSchema,
+  idParamSchema,
+  offsetParamSchema,
+  retiradoPorParamSchema,
+  searchTermParamSchema,
+  transportadoraNomeBrutoParamSchema,
+  transportadoraNomeParamSchema,
+} from "@/schemas/action-params"
 import { getSessionClaims } from "@/services/auth/session"
-import type { Encomenda, EncomendaComDetalhes } from "@/types/domain"
+import type {
+  Encomenda,
+  EncomendaComDetalhes,
+  TransportadoraCadastrada,
+} from "@/types/domain"
 
 export type EncomendaActionResult =
   | { success: true; encomendas: Encomenda[] }
@@ -31,13 +62,17 @@ export async function createEncomendaAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   const parsed = encomendaCreateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    // Regra fixa (NF ou rastreio por item) vem com mensagem propria.
+    return {
+      success: false,
+      error: mensagemErroIdentificacao(parsed.error) ?? "Preencha os campos obrigatórios.",
+    }
   }
 
   const { itens, ...compartilhado } = parsed.data
@@ -96,17 +131,29 @@ export async function updateEncomendaAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const parsed = encomendaUpdateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
-  const encomenda = await withTenantContext(claims, (tx) =>
-    encomendaRepository.update(tx, id, {
+  const resultado = await withTenantContext(claims, async (tx) => {
+    // Edicao: registros legados sem NF/rastreio continuam editaveis, mas quem
+    // ja tinha identificacao nao pode ficar sem nenhuma das duas.
+    const existente = await encomendaRepository.findBaseById(tx, id)
+
+    if (existente && temIdentificacao(existente) && !temIdentificacao(parsed.data)) {
+      return { identificacaoAusente: true as const }
+    }
+
+    const atualizada = await encomendaRepository.update(tx, id, {
       moradorId: parsed.data.moradorId,
       rua: parsed.data.rua,
       numero: parsed.data.numero,
@@ -118,12 +165,20 @@ export async function updateEncomendaAction(
       notaFiscal: parsed.data.notaFiscal || null,
       observacoes: parsed.data.observacoes || null,
     })
-  )
+
+    return { identificacaoAusente: false as const, encomenda: atualizada }
+  })
+
+  if (resultado.identificacaoAusente) {
+    return { success: false, error: IDENTIFICACAO_OBRIGATORIA_MENSAGEM }
+  }
+
+  const { encomenda } = resultado
 
   if (!encomenda) {
     return {
       success: false,
-      error: "Encomenda nao encontrada ou ja foi entregue.",
+      error: "Encomenda não encontrada ou já foi entregue.",
     }
   }
 
@@ -148,13 +203,21 @@ export async function addItemToEncomendaLoteAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(loteId).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const parsed = encomendaAddItemSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    // Regra fixa (NF ou rastreio por item) vem com mensagem propria.
+    return {
+      success: false,
+      error: mensagemErroIdentificacao(parsed.error) ?? "Preencha os campos obrigatórios.",
+    }
   }
 
   const encomenda = await withTenantContext(claims, async (tx) => {
@@ -196,7 +259,7 @@ export async function addItemToEncomendaLoteAction(
   if (!encomenda) {
     return {
       success: false,
-      error: "Lote nao encontrado ou ja foi entregue — nao e possivel adicionar itens.",
+      error: "Lote não encontrado ou já entregue. Não é possível adicionar itens.",
     }
   }
 
@@ -216,7 +279,18 @@ export async function entregarAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
+  }
+
+  if (!retiradoPorParamSchema.safeParse(retiradoPor).success) {
+    return {
+      success: false,
+      error: "Nome de quem retirou inválido (máximo de 120 caracteres).",
+    }
   }
 
   const nomeRetirou = retiradoPor.trim()
@@ -235,7 +309,7 @@ export async function entregarAction(
         usuarioId: claims.sub,
         usuarioNome: claims.nome,
         acao: "encomenda_entregue",
-        descricao: `Entregou ${rows.length} item(ns) para ${morador?.nome ?? "morador"} (${rows[0]!.rua}, ${rows[0]!.numero}) — retirado por ${nomeRetirou}`,
+        descricao: `Entregou ${rows.length} item(ns) para ${morador?.nome ?? "morador"} (${rows[0]!.rua}, ${rows[0]!.numero}). Retirado por ${nomeRetirou}.`,
         entidadeId: rows[0]!.loteId,
       })
     }
@@ -244,7 +318,7 @@ export async function entregarAction(
   })
 
   if (entregues.length === 0) {
-    return { success: false, error: "Encomenda ja foi entregue ou nao existe." }
+    return { success: false, error: "Encomenda já foi entregue ou não existe." }
   }
 
   revalidatePath("/")
@@ -266,7 +340,18 @@ export async function entregarItemAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
+  }
+
+  if (!retiradoPorParamSchema.safeParse(retiradoPor).success) {
+    return {
+      success: false,
+      error: "Nome de quem retirou inválido (máximo de 120 caracteres).",
+    }
   }
 
   const nomeRetirou = retiradoPor.trim()
@@ -285,7 +370,7 @@ export async function entregarItemAction(
         usuarioId: claims.sub,
         usuarioNome: claims.nome,
         acao: "encomenda_entregue",
-        descricao: `Entregou 1 item (entrega parcial do lote) para ${morador?.nome ?? "morador"} (${rows[0]!.rua}, ${rows[0]!.numero}) — retirado por ${nomeRetirou}`,
+        descricao: `Entregou 1 item (entrega parcial do lote) para ${morador?.nome ?? "morador"} (${rows[0]!.rua}, ${rows[0]!.numero}). Retirado por ${nomeRetirou}.`,
         entidadeId: rows[0]!.loteId,
       })
     }
@@ -294,7 +379,7 @@ export async function entregarItemAction(
   })
 
   if (entregues.length === 0) {
-    return { success: false, error: "Item ja foi entregue ou nao existe." }
+    return { success: false, error: "Item já foi entregue ou não existe." }
   }
 
   revalidatePath("/")
@@ -315,7 +400,11 @@ export async function voltarParaPendenteAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const revertidas = await withTenantContext(claims, async (tx) => {
@@ -337,7 +426,7 @@ export async function voltarParaPendenteAction(
   })
 
   if (revertidas.length === 0) {
-    return { success: false, error: "Encomenda ja esta pendente ou nao existe." }
+    return { success: false, error: "Encomenda já está pendente ou não existe." }
   }
 
   revalidatePath("/")
@@ -364,14 +453,18 @@ export async function toggleDeixadoPortariaAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (!isAdminLike(claims.app_role)) {
     return {
       success: false,
-      error: "Apenas administracao ou desenvolvedor podem sinalizar a portaria.",
+      error: "Apenas administração ou desenvolvedor podem sinalizar a portaria.",
     }
+  }
+
+  if (!idParamSchema.safeParse(loteId).success || typeof ativo !== "boolean") {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const atualizadas = await withTenantContext(claims, async (tx) => {
@@ -397,7 +490,7 @@ export async function toggleDeixadoPortariaAction(
   })
 
   if (atualizadas.length === 0) {
-    return { success: false, error: "Lote nao encontrado ou ja foi entregue." }
+    return { success: false, error: "Lote não encontrado ou já foi entregue." }
   }
 
   revalidatePath("/")
@@ -417,11 +510,15 @@ export async function excluirEncomendaAction(id: string): Promise<ExcluirEncomen
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (!isAdminLike(claims.app_role)) {
     return { success: false, error: "Apenas administradores podem excluir encomendas." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const excluidas = await withTenantContext(claims, async (tx) => {
@@ -445,7 +542,7 @@ export async function excluirEncomendaAction(id: string): Promise<ExcluirEncomen
   if (excluidas.length === 0) {
     return {
       success: false,
-      error: "Encomenda nao encontrada ou ainda pendente (so entregues podem ser excluidas).",
+      error: "Encomenda não encontrada ou ainda pendente (só entregues podem ser excluídas).",
     }
   }
 
@@ -463,6 +560,8 @@ export async function listPendentesAction(
 
   if (!claims) return []
 
+  if (!encomendaCategoriaParamSchema.safeParse(categoria).success) return []
+
   return withTenantContext(claims, (tx) =>
     encomendaRepository.listPendentes(tx, categoria)
   )
@@ -475,6 +574,13 @@ export async function listEntreguesAction(
   const claims = await getSessionClaims()
 
   if (!claims) return []
+
+  if (
+    !encomendaCategoriaParamSchema.safeParse(categoria).success ||
+    !offsetParamSchema.safeParse(offset).success
+  ) {
+    return []
+  }
 
   return withTenantContext(claims, (tx) =>
     encomendaRepository.listEntregues(tx, ENCOMENDAS_PAGE_SIZE, categoria, offset)
@@ -490,6 +596,15 @@ export async function searchEncomendasAction(
   const claims = await getSessionClaims()
 
   if (!claims) return []
+
+  if (
+    !searchTermParamSchema.safeParse(term).success ||
+    !encomendaCategoriaParamSchema.safeParse(categoria).success ||
+    !offsetParamSchema.safeParse(offset).success ||
+    !desdeParamSchema.safeParse(desde).success
+  ) {
+    return []
+  }
 
   return withTenantContext(claims, (tx) =>
     encomendaRepository.search(tx, term, ENCOMENDAS_PAGE_SIZE, categoria, offset, desde)
@@ -512,6 +627,10 @@ export async function getCardsStatsAction(
     return { pendentes: 0, recebidasHoje: 0, entreguesHoje: 0, pendentesAntigas: 0 }
   }
 
+  if (!encomendaCategoriaParamSchema.safeParse(categoria).success) {
+    return { pendentes: 0, recebidasHoje: 0, entreguesHoje: 0, pendentesAntigas: 0 }
+  }
+
   return withTenantContext(claims, async (tx) => {
     const [pendentes, recebidasHoje, entreguesHoje, pendentesAntigas] =
       await Promise.all([
@@ -523,4 +642,114 @@ export async function getCardsStatsAction(
 
     return { pendentes, recebidasHoje, entreguesHoje, pendentesAntigas }
   })
+}
+
+/** Catálogo de transportadoras personalizadas do condomínio (qualquer papel). */
+export async function listTransportadorasAction(): Promise<TransportadoraCadastrada[]> {
+  const claims = await getSessionClaims()
+
+  if (!claims) return []
+
+  return withTenantContext(claims, (tx) => transportadoraRepository.list(tx))
+}
+
+export type CreateTransportadoraResult =
+  /** O nome digitado é uma das fixas (ex.: "correios ") — usa o valor do enum. */
+  | { success: true; tipo: "fixa"; valor: TransportadoraFixa }
+  /** Cadastrada agora ou já existente no catálogo (comparação case-insensitive). */
+  | { success: true; tipo: "cadastrada"; transportadora: TransportadoraCadastrada }
+  | { success: false; error: string }
+
+/**
+ * Cadastra um nome no catálogo de transportadoras do condomínio. Qualquer
+ * papel pode cadastrar (mesmo modelo de remetentes). Idempotente: nome já
+ * existente devolve o registro atual em vez de erro.
+ */
+export async function createTransportadoraAction(
+  nome: string
+): Promise<CreateTransportadoraResult> {
+  const claims = await getSessionClaims()
+
+  if (!claims) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!transportadoraNomeBrutoParamSchema.safeParse(nome).success) {
+    return { success: false, error: "Nome da transportadora inválido." }
+  }
+
+  const normalizado = normalizarNomeTransportadora(nome)
+  const validado = transportadoraNomeParamSchema.safeParse(normalizado)
+
+  if (!validado.success) {
+    return {
+      success: false,
+      error: validado.error.issues[0]?.message ?? "Nome da transportadora inválido.",
+    }
+  }
+
+  const fixa = casarTransportadoraFixa(normalizado)
+
+  if (fixa === "outros") {
+    return {
+      success: false,
+      error: "Digite o nome da transportadora (por exemplo, J&T ou Shein).",
+    }
+  }
+
+  if (fixa) {
+    return { success: true, tipo: "fixa", valor: fixa }
+  }
+
+  try {
+    const resultado = await withTenantContext(claims, async (tx) => {
+      const existente = await transportadoraRepository.findByNome(
+        tx,
+        claims.condominio_id,
+        normalizado
+      )
+
+      if (existente) {
+        return { tetoAtingido: false as const, transportadora: existente }
+      }
+
+      const total = await transportadoraRepository.count(tx, claims.condominio_id)
+
+      if (total >= TRANSPORTADORAS_TETO_POR_CONDOMINIO) {
+        return { tetoAtingido: true as const }
+      }
+
+      const criada = await transportadoraRepository.create(tx, {
+        condominioId: claims.condominio_id,
+        nome: normalizado,
+      })
+
+      return { tetoAtingido: false as const, transportadora: criada }
+    })
+
+    if (resultado.tetoAtingido) {
+      return {
+        success: false,
+        error: `O condomínio já tem ${TRANSPORTADORAS_TETO_POR_CONDOMINIO} transportadoras cadastradas. Escolha uma da lista ou fale com a administração.`,
+      }
+    }
+
+    return { success: true, tipo: "cadastrada", transportadora: resultado.transportadora }
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return {
+        success: false,
+        error: "Esta transportadora já está cadastrada. Selecione-a na lista.",
+      }
+    }
+
+    if (isCheckViolation(error)) {
+      return {
+        success: false,
+        error: "Nome da transportadora inválido (de 1 a 60 caracteres).",
+      }
+    }
+
+    throw error
+  }
 }

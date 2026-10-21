@@ -14,9 +14,11 @@ export function NovaEncomendaButton() {
 
   return (
     <>
-      <Button size="lg" onClick={() => setOpen(true)}>
+      <Button size="lg" aria-label="Nova encomenda" onClick={() => setOpen(true)}>
         <Plus />
-        Nova encomenda
+        <span>
+          Nova<span className="hidden sm:inline"> encomenda</span>
+        </span>
       </Button>
 
       <EncomendaFormDialog
@@ -28,6 +30,7 @@ export function NovaEncomendaButton() {
             queryKey: ["encomendas-pendentes", "encomenda"],
           })
           void queryClient.invalidateQueries({ queryKey: ["cards-stats", "encomenda"] })
+          void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
           void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
         }}
       />

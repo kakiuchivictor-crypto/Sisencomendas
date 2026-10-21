@@ -19,20 +19,20 @@ export async function updateCondominioAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (claims.app_role !== "desenvolvedor") {
     return {
       success: false,
-      error: "Apenas administradores podem alterar as configuracoes.",
+      error: "Apenas administradores podem alterar as configurações.",
     }
   }
 
   const parsed = condominioSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
   const condominio = await withTenantContext(claims, async (tx) => {
@@ -47,7 +47,7 @@ export async function updateCondominioAction(
         usuarioId: claims.sub,
         usuarioNome: claims.nome,
         acao: "configuracoes_atualizadas",
-        descricao: `Atualizou as configuracoes do condominio (nome: ${atualizado.nome})`,
+        descricao: `Atualizou as configurações do condomínio (nome: ${atualizado.nome})`,
         entidadeId: atualizado.id,
       })
     }
@@ -56,7 +56,7 @@ export async function updateCondominioAction(
   })
 
   if (!condominio) {
-    return { success: false, error: "Condominio nao encontrado." }
+    return { success: false, error: "Condomínio não encontrado." }
   }
 
   revalidatePath("/configuracoes")

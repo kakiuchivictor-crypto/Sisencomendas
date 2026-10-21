@@ -25,8 +25,17 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-field-line: var(--field-line);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-ok-soft: var(--ok-soft);
+  --color-overlay: var(--overlay);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-success: var(--success);
@@ -68,19 +77,30 @@
   --accent: oklch(0.94 0.025 258);
   --accent-foreground: oklch(0.3 0.07 258);
   --destructive: oklch(0.577 0.22 25);
+  --destructive-foreground: oklch(0.985 0.005 25);
+  /* Pares texto/fundo para badges e destaques de status (AA >= 4,5:1). */
+  --danger-ink: oklch(0.45 0.17 25);
+  --danger-soft: oklch(0.965 0.022 25);
+  --warn-ink: oklch(0.45 0.1 70);
+  --warn-soft: oklch(0.965 0.04 85);
+  --ok-ink: oklch(0.42 0.11 152);
+  --ok-soft: oklch(0.955 0.035 152);
+  --overlay: oklch(0.2 0.03 258 / 0.42);
   --warning: oklch(0.6 0.16 75);
   --warning-foreground: oklch(0.28 0.05 75);
   --success: oklch(0.54 0.13 152);
   --success-foreground: oklch(0.98 0.01 152);
   --border: oklch(0.9 0.009 258);
   --input: oklch(0.9 0.009 258);
+  /* Linha inferior dos campos "so sublinhado" (login): >= 3:1 com o fundo. */
+  --field-line: oklch(0.55 0.02 258);
   --ring: oklch(0.55 0.14 258);
   --chart-1: oklch(0.55 0.14 258);
   --chart-2: oklch(0.65 0.13 200);
   --chart-3: oklch(0.7 0.15 150);
   --chart-4: oklch(0.75 0.15 80);
   --chart-5: oklch(0.65 0.19 25);
-  --radius: 0.7rem;
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0.003 258);
   --sidebar-foreground: oklch(0.19 0.016 258);
   --sidebar-primary: oklch(0.4 0.15 258);
@@ -108,12 +128,21 @@
   --accent: oklch(0.31 0.045 258);
   --accent-foreground: oklch(0.93 0.02 258);
   --destructive: oklch(0.704 0.19 22);
+  --destructive-foreground: oklch(0.18 0.03 22);
+  --danger-ink: oklch(0.8 0.12 22);
+  --danger-soft: oklch(0.7 0.18 22 / 0.14);
+  --warn-ink: oklch(0.85 0.12 80);
+  --warn-soft: oklch(0.78 0.14 80 / 0.14);
+  --ok-ink: oklch(0.82 0.12 152);
+  --ok-soft: oklch(0.74 0.13 152 / 0.14);
+  --overlay: oklch(0.08 0.02 258 / 0.6);
   --warning: oklch(0.78 0.14 80);
   --warning-foreground: oklch(0.22 0.04 80);
   --success: oklch(0.74 0.13 152);
   --success-foreground: oklch(0.16 0.03 152);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
+  --field-line: oklch(0.6 0.02 258);
   --ring: oklch(0.6 0.13 258);
   --chart-1: oklch(0.73 0.14 258);
   --chart-2: oklch(0.75 0.12 200);
@@ -145,5 +174,42 @@
   h2,
   h3 {
     @apply font-heading text-balance tracking-tight;
+  }
+}
+/* ------------------------------------------------------------------
+ * Tela de login — selo LogixOne (LogixOneSeal) que "se desenha": os
+ * paths usam pathLength=1, entao dasharray/offset 1 cobrem o traco todo.
+ * Com prefers-reduced-motion fica o desenho final, estatico.
+ * ------------------------------------------------------------------ */
+@keyframes lx-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes lx-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.lx-seal-edge {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: lx-draw 1.6s cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+.lx-seal-top {
+  opacity: 0.14;
+  animation: lx-fade-in 0.8s 1.2s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-seal-edge,
+  .lx-seal-top {
+    animation: none;
   }
 }

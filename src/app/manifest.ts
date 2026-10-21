@@ -2,14 +2,16 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SisEncomendas — Controle de Encomendas",
-    short_name: "SisEncomendas",
-    description: "Controle de encomendas para condominios",
+    name: "LogixOne · Controle de encomendas",
+    short_name: "LogixOne",
+    description: "LogixOne · Controle de encomendas para condomínios",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#2f3ea3",
+    // Mesmo off-white do --background (oklch(0.995 0.002 258)) para a splash
+    // do PWA nao "piscar" branco puro antes do app pintar.
+    background_color: "#fdfdff",
+    theme_color: "#004296",
     lang: "pt-BR",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },

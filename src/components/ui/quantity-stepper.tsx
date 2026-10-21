@@ -18,6 +18,9 @@ export function QuantityStepper({
   max = 999,
   className,
   inputClassName,
+  id,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
 }: {
   value: number
   onChange: (value: number) => void
@@ -25,6 +28,11 @@ export function QuantityStepper({
   max?: number
   className?: string
   inputClassName?: string
+  /** Repassados ao input numerico — o FormControl injeta esses props para
+   * que o FormLabel ("Quantidade") fique associado ao campo. */
+  id?: string
+  "aria-describedby"?: string
+  "aria-invalid"?: boolean
 }) {
   return (
     <div className={cn("flex items-center gap-1", className)}>
@@ -39,10 +47,13 @@ export function QuantityStepper({
         <Minus />
       </Button>
       <Input
+        id={id}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         type="number"
         min={min}
         max={max}
-        className={cn("text-center font-mono tabular-nums", inputClassName)}
+        className={cn("text-center font-mono tabular-nums pointer-coarse:h-11", inputClassName)}
         value={value}
         onChange={(event) => {
           const parsed = Number(event.target.value)

@@ -1,4 +1,7 @@
-# SisEncomendas
+# LogixOne
+
+> Nome interno/técnico do projeto: `sisencomendas` (pacote npm, schema
+> Postgres, roles do banco e projeto na Vercel continuam com esse nome).
 
 SaaS multi-tenant para substituir o caderno de papel do controle de encomendas
 em condominios (portaria). Registro de encomendas, central da portaria, abas

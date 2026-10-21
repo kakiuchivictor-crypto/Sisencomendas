@@ -8,7 +8,7 @@ import { getReportAction } from "./actions"
 import { RelatorioView } from "./relatorio-view"
 
 export const metadata: Metadata = {
-  title: "Relatorios — SisEncomendas",
+  title: "Relatórios",
 }
 
 export default async function RelatoriosPage() {

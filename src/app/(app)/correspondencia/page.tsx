@@ -11,7 +11,7 @@ import { PendentesList } from "../_encomendas/pendentes-list"
 import { NovaCorrespondenciaButton } from "./nova-correspondencia-button"
 
 export const metadata: Metadata = {
-  title: "Correspondencia — SisEncomendas",
+  title: "Correspondência",
 }
 
 export default async function CorrespondenciaPage() {
@@ -32,7 +32,7 @@ export default async function CorrespondenciaPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Correspondencia</h1>
           <p className="text-muted-foreground text-sm">

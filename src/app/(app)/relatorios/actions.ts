@@ -2,7 +2,9 @@
 
 import { withTenantContext } from "@/lib/db"
 import { isAdminLike, type Transportadora } from "@/lib/labels"
+import { normalizarNomeTransportadora } from "@/lib/transportadoras"
 import { encomendaRepository } from "@/repositories/encomenda-repository"
+import { reportFiltersParamSchema } from "@/schemas/action-params"
 import { getSessionClaims } from "@/services/auth/session"
 import type { EncomendaComDetalhes, EncomendaStatus } from "@/types/domain"
 
@@ -10,6 +12,8 @@ export type ReportFiltersInput = {
   from?: string
   to?: string
   transportadora?: Transportadora
+  /** Nome de transportadora personalizada (implica transportadora = 'outros'). */
+  transportadoraOutro?: string
   moradorId?: string
   status?: EncomendaStatus
 }
@@ -38,13 +42,26 @@ const EMPTY_RESULT: ReportResult = {
 const DEFAULT_RANGE_DAYS = 90
 
 export async function getReportAction(
-  filters: ReportFiltersInput
+  input: ReportFiltersInput
 ): Promise<ReportResult> {
   const claims = await getSessionClaims()
 
   if (!claims || !isAdminLike(claims.app_role)) {
     return EMPTY_RESULT
   }
+
+  // Server action e endpoint publico: valida o formato de cada filtro
+  // (datas ISO, enum, uuid, nome ate 60) antes de chegar ao banco.
+  const parsed = reportFiltersParamSchema.safeParse(input)
+
+  if (!parsed.success) {
+    return EMPTY_RESULT
+  }
+
+  const filters = parsed.data
+  const transportadoraOutro = filters.transportadoraOutro
+    ? normalizarNomeTransportadora(filters.transportadoraOutro)
+    : ""
 
   const from = filters.from
     ? new Date(`${filters.from}T00:00:00`)
@@ -54,6 +71,7 @@ export async function getReportAction(
     from,
     to: filters.to ? new Date(`${filters.to}T23:59:59.999`) : undefined,
     transportadora: filters.transportadora,
+    transportadoraOutro: transportadoraOutro || undefined,
     moradorId: filters.moradorId,
     status: filters.status,
   }

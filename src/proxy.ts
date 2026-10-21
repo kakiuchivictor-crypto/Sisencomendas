@@ -4,6 +4,13 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware"
 
 const PUBLIC_PATHS = ["/login"]
 
+// Comparacao exata (ou subcaminho com "/"), nunca prefixo solto: com
+// startsWith("/login"), qualquer rota futura que comece com essas letras
+// ("/login-admin", "/loginhistorico"...) ficaria publica por acidente.
+function isPublicPathname(pathname: string): boolean {
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+}
+
 const isDev = process.env.NODE_ENV !== "production"
 
 // O client Supabase do navegador (auth + Realtime) fala direto com o projeto
@@ -40,7 +47,7 @@ function buildCsp(nonce: string): string {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path))
+  const isPublicPath = isPublicPathname(pathname)
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
   const cspHeader = buildCsp(nonce)
@@ -89,8 +96,12 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   }
 }
 
+// Cada exclusao e ancorada com (?:$|/): o item precisa ser o segmento
+// inteiro, nao so um prefixo. Sem a ancora, "/pwa-iconqualquercoisa" ou
+// "/sw.jsx" pulariam o proxy (sem checagem de sessao e sem CSP). A query
+// string (ex.: /pwa-icon?size=192) nao faz parte do pathname avaliado aqui.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon|pwa-icon|opengraph-image|twitter-image|manifest.webmanifest|sw.js|offline.html).*)",
+    "/((?!(?:_next/static|_next/image|favicon\\.ico|icon\\.svg|apple-icon|pwa-icon|opengraph-image|twitter-image|manifest\\.webmanifest|sw\\.js|offline\\.html)(?:$|/)).*)",
   ],
 }

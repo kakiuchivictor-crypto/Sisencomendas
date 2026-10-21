@@ -9,7 +9,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { EntreguesList } from "./entregues-list"
 
 export const metadata: Metadata = {
-  title: "Entregues — SisEncomendas",
+  title: "Entregues",
 }
 
 export default async function EntreguesPage() {

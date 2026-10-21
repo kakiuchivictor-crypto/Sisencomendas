@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { withTenantContext } from "@/lib/db"
@@ -6,6 +7,10 @@ import { encomendaRepository } from "@/repositories/encomenda-repository"
 import { getSessionClaims } from "@/services/auth/session"
 
 import { PendentesHeader } from "./_encomendas/pendentes-header"
+
+export const metadata: Metadata = {
+  title: "Pendentes",
+}
 
 export default async function HomePage() {
   const claims = await getSessionClaims()

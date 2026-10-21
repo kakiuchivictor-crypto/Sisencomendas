@@ -8,7 +8,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { AtividadeView } from "./atividade-view"
 
 export const metadata: Metadata = {
-  title: "Atividade — SisEncomendas",
+  title: "Atividade",
 }
 
 export default async function AtividadePage() {

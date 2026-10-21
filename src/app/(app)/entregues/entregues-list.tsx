@@ -48,11 +48,13 @@ export function EntreguesList({
     void refetch()
     void queryClient.invalidateQueries({ queryKey: ["encomendas-pendentes", categoria] })
     void queryClient.invalidateQueries({ queryKey: ["cards-stats", categoria] })
+    void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
   }
 
   function handleDeleted() {
     void refetch()
     void queryClient.invalidateQueries({ queryKey: ["cards-stats", categoria] })
+    void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
   }
 
   const list = data?.pages.flat() ?? []

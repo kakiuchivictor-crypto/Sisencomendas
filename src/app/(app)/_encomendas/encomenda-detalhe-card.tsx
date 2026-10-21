@@ -112,8 +112,8 @@ export function EncomendaDetalheCard({
                 className={cn(
                   "border-transparent",
                   entregue
-                    ? "bg-success/12 text-success"
-                    : "bg-warning/15 text-warning"
+                    ? "bg-ok-soft text-ok-ink"
+                    : "bg-warn-soft text-warn-ink"
                 )}
               >
                 {entregue ? "Entregue" : "Pendente"}
@@ -260,7 +260,7 @@ export function EncomendaDetalheCard({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive-solid"
             >
               {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>

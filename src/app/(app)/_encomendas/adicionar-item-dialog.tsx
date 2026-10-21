@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useState, useTransition } from "react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { QuantityStepper } from "@/components/ui/quantity-stepper"
 import {
   Select,
@@ -35,8 +34,6 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   TIPO_ENCOMENDA_LABELS,
   TIPO_ENCOMENDA_OPTIONS_SEM_CARTA,
-  TRANSPORTADORA_LABELS,
-  TRANSPORTADORA_OPTIONS,
 } from "@/lib/labels"
 import { offlineAwareErrorMessage } from "@/lib/network"
 import type { EncomendaCategoria } from "@/repositories/encomenda-repository"
@@ -51,6 +48,8 @@ import {
 } from "@/schemas/correspondencia"
 
 import { addItemToEncomendaLoteAction } from "./actions"
+import { IdentificacaoFields } from "./identificacao-fields"
+import { TransportadoraField } from "./transportadora-field"
 import {
   addItemToCorrespondenciaLoteAction,
   type CorrespondenciaActionResult,
@@ -118,8 +117,6 @@ function AdicionarEncomendaItemForm({
       observacoes: "",
     },
   })
-
-  const transportadora = useWatch({ control: form.control, name: "transportadora" })
 
   function onSubmit(values: EncomendaAddItemInput) {
     startTransition(async () => {
@@ -199,80 +196,17 @@ function AdicionarEncomendaItemForm({
             />
           </div>
 
-          <FormField
+          <TransportadoraField
             control={form.control}
-            name="transportadora"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Transportadora</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue>
-                        {(value: keyof typeof TRANSPORTADORA_LABELS) =>
-                          TRANSPORTADORA_LABELS[value]
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {TRANSPORTADORA_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            transportadoraName="transportadora"
+            transportadoraOutroName="transportadoraOutro"
           />
 
-          {transportadora === "outros" && (
-            <FormField
-              control={form.control}
-              name="transportadoraOutro"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Qual transportadora?</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da transportadora" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="codigoRastreio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: BR123456789BR" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notaFiscal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nota fiscal (opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Numero da NF" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <IdentificacaoFields
+            control={form.control}
+            rastreioName="codigoRastreio"
+            notaFiscalName="notaFiscal"
+          />
 
           <FormField
             control={form.control}
@@ -330,6 +264,7 @@ function AdicionarCorrespondenciaItemForm({
       remetenteId: "",
       quantidade: 1,
       codigoRastreio: "",
+      notaFiscal: "",
     },
   })
 
@@ -402,18 +337,10 @@ function AdicionarCorrespondenciaItemForm({
             />
           </div>
 
-          <FormField
+          <IdentificacaoFields
             control={form.control}
-            name="codigoRastreio"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: BR123456789BR" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            rastreioName="codigoRastreio"
+            notaFiscalName="notaFiscal"
           />
 
           <DialogFooter>

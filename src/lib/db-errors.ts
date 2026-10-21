@@ -27,3 +27,8 @@ export function isUniqueViolation(error: unknown): boolean {
 export function isForeignKeyViolation(error: unknown): boolean {
   return getPgErrorCode(error) === "23503"
 }
+
+/** 23514 = check_violation (ex.: transportadoras_nome_valido). */
+export function isCheckViolation(error: unknown): boolean {
+  return getPgErrorCode(error) === "23514"
+}

@@ -14,6 +14,12 @@ import {
   correspondenciaCreateSchema,
   correspondenciaUpdateSchema,
 } from "@/schemas/correspondencia"
+import {
+  IDENTIFICACAO_OBRIGATORIA_MENSAGEM,
+  mensagemErroIdentificacao,
+  temIdentificacao,
+} from "@/schemas/identificacao"
+import { idParamSchema, remetenteNomeParamSchema } from "@/schemas/action-params"
 import { getSessionClaims } from "@/services/auth/session"
 import type { Encomenda, Remetente } from "@/types/domain"
 
@@ -27,13 +33,17 @@ export async function createCorrespondenciaAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   const parsed = correspondenciaCreateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    // Regra fixa (NF ou rastreio por item) vem com mensagem propria.
+    return {
+      success: false,
+      error: mensagemErroIdentificacao(parsed.error) ?? "Preencha os campos obrigatórios.",
+    }
   }
 
   const correspondencia = await withTenantContext(claims, async (tx) => {
@@ -47,6 +57,7 @@ export async function createCorrespondenciaAction(
       tipo: "carta",
       quantidade: parsed.data.quantidade,
       codigoRastreio: parsed.data.codigoRastreio || null,
+      notaFiscal: parsed.data.notaFiscal || null,
       observacoes: parsed.data.observacoes || null,
       recebidaPor: claims.sub,
     })
@@ -57,7 +68,7 @@ export async function createCorrespondenciaAction(
       usuarioId: claims.sub,
       usuarioNome: claims.nome,
       acao: "correspondencia_criada",
-      descricao: `Registrou correspondencia para ${morador?.nome ?? "morador"} (${parsed.data.rua}, ${parsed.data.numero})`,
+      descricao: `Registrou correspondência para ${morador?.nome ?? "morador"} (${parsed.data.rua}, ${parsed.data.numero})`,
       entidadeId: criada.loteId,
     })
 
@@ -76,17 +87,29 @@ export async function updateCorrespondenciaAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const parsed = correspondenciaUpdateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
-  const correspondencia = await withTenantContext(claims, (tx) =>
-    encomendaRepository.update(tx, id, {
+  const resultado = await withTenantContext(claims, async (tx) => {
+    // Mesma regra de edicao das encomendas: legado sem NF/rastreio continua
+    // editavel; quem ja tinha identificacao nao pode ficar sem nenhuma.
+    const existente = await encomendaRepository.findBaseById(tx, id)
+
+    if (existente && temIdentificacao(existente) && !temIdentificacao(parsed.data)) {
+      return { identificacaoAusente: true as const }
+    }
+
+    const atualizada = await encomendaRepository.update(tx, id, {
       moradorId: parsed.data.moradorId,
       rua: parsed.data.rua,
       numero: parsed.data.numero,
@@ -94,14 +117,23 @@ export async function updateCorrespondenciaAction(
       tipo: "carta",
       quantidade: parsed.data.quantidade,
       codigoRastreio: parsed.data.codigoRastreio || null,
+      notaFiscal: parsed.data.notaFiscal || null,
       observacoes: parsed.data.observacoes || null,
     })
-  )
+
+    return { identificacaoAusente: false as const, correspondencia: atualizada }
+  })
+
+  if (resultado.identificacaoAusente) {
+    return { success: false, error: IDENTIFICACAO_OBRIGATORIA_MENSAGEM }
+  }
+
+  const { correspondencia } = resultado
 
   if (!correspondencia) {
     return {
       success: false,
-      error: "Correspondencia nao encontrada ou ja foi entregue.",
+      error: "Correspondência não encontrada ou já foi entregue.",
     }
   }
 
@@ -118,13 +150,21 @@ export async function addItemToCorrespondenciaLoteAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(loteId).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
   }
 
   const parsed = correspondenciaAddItemSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    // Regra fixa (NF ou rastreio por item) vem com mensagem propria.
+    return {
+      success: false,
+      error: mensagemErroIdentificacao(parsed.error) ?? "Preencha os campos obrigatórios.",
+    }
   }
 
   const correspondencia = await withTenantContext(claims, async (tx) => {
@@ -144,6 +184,7 @@ export async function addItemToCorrespondenciaLoteAction(
       tipo: "carta",
       quantidade: parsed.data.quantidade,
       codigoRastreio: parsed.data.codigoRastreio || null,
+      notaFiscal: parsed.data.notaFiscal || null,
       recebidaPor: claims.sub,
     })
 
@@ -153,7 +194,7 @@ export async function addItemToCorrespondenciaLoteAction(
       usuarioId: claims.sub,
       usuarioNome: claims.nome,
       acao: "item_adicionado_lote",
-      descricao: `Adicionou 1 correspondencia para ${morador?.nome ?? "morador"} (${existente.rua}, ${existente.numero})`,
+      descricao: `Adicionou 1 correspondência para ${morador?.nome ?? "morador"} (${existente.rua}, ${existente.numero})`,
       entidadeId: loteId,
     })
 
@@ -163,7 +204,7 @@ export async function addItemToCorrespondenciaLoteAction(
   if (!correspondencia) {
     return {
       success: false,
-      error: "Nao encontrada ou ja entregue — nao e possivel adicionar itens.",
+      error: "Correspondência não encontrada ou já entregue. Não é possível adicionar itens.",
     }
   }
 
@@ -192,7 +233,14 @@ export async function createRemetenteAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!remetenteNomeParamSchema.safeParse(nome).success) {
+    return {
+      success: false,
+      error: "Nome do remetente inválido (máximo de 120 caracteres).",
+    }
   }
 
   const nomeTrimmed = nome.trim()
@@ -213,6 +261,6 @@ export async function createRemetenteAction(
 
     return { success: true, remetente }
   } catch {
-    return { success: false, error: "Este remetente ja existe." }
+    return { success: false, error: "Este remetente já existe." }
   }
 }

@@ -53,7 +53,7 @@ export function MoradorSearchCombobox({
           !value && "text-muted-foreground"
         )}
       >
-        {value ? `${value.nome} — ${value.rua}, ${value.numero}` : placeholder}
+        {value ? `${value.nome} · ${value.rua}, ${value.numero}` : placeholder}
         <ChevronsUpDown className="size-4 opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-(--anchor-width) p-0" align="start">

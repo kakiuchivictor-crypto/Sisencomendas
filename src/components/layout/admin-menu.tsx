@@ -11,6 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+/**
+ * Engrenagem do header: so itens de administracao do sistema (Atividade,
+ * Usuarios, Configuracoes). Relatorios virou aba da nav principal.
+ */
 export function AdminMenu({
   items,
 }: {

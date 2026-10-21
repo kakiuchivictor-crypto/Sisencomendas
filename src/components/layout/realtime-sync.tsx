@@ -45,6 +45,7 @@ export function RealtimeSync({ condominioId }: { condominioId: string }) {
             void queryClient.invalidateQueries({ queryKey: ["encomendas-entregues"] })
             void queryClient.invalidateQueries({ queryKey: ["cards-stats"] })
             void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+            void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
           }, INVALIDATE_DEBOUNCE_MS)
         }
       )

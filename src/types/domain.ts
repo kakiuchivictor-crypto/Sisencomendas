@@ -7,6 +7,7 @@ import type {
   moradores,
   remetentes,
   temaEnum,
+  transportadoras,
   usuarios,
 } from "@/db/schema"
 import type { TipoEncomenda, Transportadora, UsuarioRole } from "@/lib/labels"
@@ -17,6 +18,8 @@ export type Morador = typeof moradores.$inferSelect
 export type Encomenda = typeof encomendas.$inferSelect
 export type LogAtividade = typeof logAtividade.$inferSelect
 export type Remetente = typeof remetentes.$inferSelect
+/** Linha do catálogo sisencomendas.transportadoras (nome personalizado por condomínio). */
+export type TransportadoraCadastrada = typeof transportadoras.$inferSelect
 
 export type { TipoEncomenda, Transportadora, UsuarioRole }
 export type EncomendaStatus = (typeof encomendaStatusEnum.enumValues)[number]

@@ -50,7 +50,9 @@ export function UsuariosList({
 
   const { data: usuarios, refetch } = useQuery({
     queryKey: ["usuarios"],
-    queryFn: listUsuariosAction,
+    // Arrow function: o React Query passa um contexto (signal, client) que
+    // server actions nao conseguem serializar — a chamada falharia em silencio.
+    queryFn: () => listUsuariosAction(),
     initialData: initialUsuarios,
   })
 
@@ -161,7 +163,11 @@ export function UsuariosList({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            <AlertDialogAction
+              variant="destructive-solid"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>

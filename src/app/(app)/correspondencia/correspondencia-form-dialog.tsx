@@ -30,12 +30,15 @@ import {
   type CorrespondenciaCreateInput,
   type CorrespondenciaUpdateInput,
   correspondenciaCreateSchema,
+  correspondenciaUpdateComIdentificacaoSchema,
   correspondenciaUpdateSchema,
 } from "@/schemas/correspondencia"
+import { temIdentificacao } from "@/schemas/identificacao"
 import type { EncomendaComDetalhes, Morador, Remetente } from "@/types/domain"
 
 import { createCorrespondenciaAction, updateCorrespondenciaAction } from "./actions"
 import { RemetenteCombobox } from "./remetente-combobox"
+import { IdentificacaoFields } from "../_encomendas/identificacao-fields"
 import { MoradorSearchCombobox } from "../_encomendas/morador-search-combobox"
 import { MoradorFormDialog } from "../moradores/morador-form-dialog"
 
@@ -126,6 +129,7 @@ function CreateCorrespondenciaForm({
       remetenteId: "",
       quantidade: 1,
       codigoRastreio: "",
+      notaFiscal: "",
       observacoes: "",
     },
   })
@@ -166,7 +170,7 @@ function CreateCorrespondenciaForm({
       <DialogHeader>
         <DialogTitle>Cadastrar correspondencia</DialogTitle>
         <DialogDescription>
-          Busque o morador e informe quantas cartas chegaram.
+          Busque o morador, informe quantas cartas chegaram e a nota fiscal ou o rastreio.
         </DialogDescription>
       </DialogHeader>
 
@@ -256,18 +260,10 @@ function CreateCorrespondenciaForm({
             />
           </div>
 
-          <FormField
+          <IdentificacaoFields
             control={form.control}
-            name="codigoRastreio"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: BR123456789BR" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            rastreioName="codigoRastreio"
+            notaFiscalName="notaFiscal"
           />
 
           <FormField
@@ -333,8 +329,16 @@ function EditCorrespondenciaForm({
     { open: false } | { open: true; searchTerm: string }
   >({ open: false })
 
+  // Mesma regra da edicao de encomendas: so exige NF/rastreio se o registro
+  // ja tinha um dos dois (form remonta por key, valor fixo).
+  const exigeIdentificacao = temIdentificacao(correspondencia)
+
   const form = useForm<CorrespondenciaUpdateInput>({
-    resolver: zodResolver(correspondenciaUpdateSchema),
+    resolver: zodResolver(
+      exigeIdentificacao
+        ? correspondenciaUpdateComIdentificacaoSchema
+        : correspondenciaUpdateSchema
+    ),
     mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
@@ -344,6 +348,7 @@ function EditCorrespondenciaForm({
       remetenteId: correspondencia.remetenteId ?? "",
       quantidade: correspondencia.quantidade,
       codigoRastreio: correspondencia.codigoRastreio ?? "",
+      notaFiscal: correspondencia.notaFiscal ?? "",
       observacoes: correspondencia.observacoes ?? "",
     },
   })
@@ -474,18 +479,11 @@ function EditCorrespondenciaForm({
             />
           </div>
 
-          <FormField
+          <IdentificacaoFields
             control={form.control}
-            name="codigoRastreio"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: BR123456789BR" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            rastreioName="codigoRastreio"
+            notaFiscalName="notaFiscal"
+            obrigatorio={exigeIdentificacao}
           />
 
           <FormField

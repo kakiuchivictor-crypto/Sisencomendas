@@ -1,5 +1,6 @@
 import { SerwistProvider } from "@serwist/next/react";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Plus_Jakarta_Sans, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,20 +25,27 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SisEncomendas — Controle de Encomendas",
-  description: "Controle de encomendas para condominios",
+  title: {
+    default: "LogixOne",
+    template: "%s | LogixOne",
+  },
+  applicationName: "LogixOne",
+  description: "LogixOne · Controle de encomendas para condomínios",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "SisEncomendas",
+    title: "LogixOne",
     statusBarStyle: "default",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2f3ea3",
+  themeColor: "#004296",
   width: "device-width",
   initialScale: 1,
+  // Com o teclado virtual aberto, o layout encolhe (em vez de so a viewport
+  // visual), para o rodape da folha inferior nao ficar escondido atras dele.
+  interactiveWidget: "resizes-content",
 };
 
 // O CSP usa um nonce novo por requisicao (ver src/proxy.ts). Se alguma
@@ -48,11 +56,17 @@ export const viewport: Viewport = {
 // nunca em build/cache.
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce gerado por requisicao em src/proxy.ts (header x-nonce). O Next ja
+  // aplica sozinho nos scripts dele; o script inline do next-themes (que
+  // aplica o tema antes da hidratacao) precisa recebe-lo explicitamente,
+  // senao e bloqueado pelo CSP.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="pt-BR"
@@ -61,7 +75,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SerwistProvider swUrl="/sw.js" disable={process.env.NODE_ENV !== "production"}>
-          <Providers>{children}</Providers>
+          <Providers nonce={nonce}>{children}</Providers>
         </SerwistProvider>
       </body>
     </html>

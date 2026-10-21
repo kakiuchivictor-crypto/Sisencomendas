@@ -194,7 +194,11 @@ export function MoradoresList({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+            <AlertDialogAction
+              variant="destructive-solid"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
               {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>

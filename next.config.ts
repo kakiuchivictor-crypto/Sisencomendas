@@ -31,6 +31,8 @@ if (!isDev) {
 }
 
 const nextConfig: NextConfig = {
+  // Nao anuncia "X-Powered-By: Next.js" (evita fingerprint de versao).
+  poweredByHeader: false,
   // Em dev, o Next so aceita requisicoes de Server Action vindas de hosts
   // explicitamente confiaveis (protecao contra CSRF). Sem isso, acessar via
   // 127.0.0.1 (em vez de localhost) faz o login parecer travado: o POST da

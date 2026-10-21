@@ -17,7 +17,10 @@ import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -33,12 +36,19 @@ import { formatDate, formatDateTime, formatDurationSeconds } from "@/lib/format"
 import {
   TIPO_ENCOMENDA_LABELS,
   TRANSPORTADORA_LABELS,
+  TRANSPORTADORA_COMBOBOX_LABELS,
   TRANSPORTADORA_OPTIONS,
   transportadoraLabel,
 } from "@/lib/labels"
+import {
+  type FiltroTransportadoraValor,
+  TRANSPORTADORAS_QUERY_KEY,
+  filtroTransportadoraParaParams,
+} from "@/lib/transportadoras"
 import { cn } from "@/lib/utils"
 import type { Morador } from "@/types/domain"
 
+import { listTransportadorasAction } from "../_encomendas/actions"
 import { MoradorSearchCombobox } from "../_encomendas/morador-search-combobox"
 import { getReportAction, type ReportFiltersInput, type ReportResult } from "./actions"
 import { exportToExcel, exportToPdf } from "./export"
@@ -46,17 +56,14 @@ import { exportToExcel, exportToPdf } from "./export"
 export function RelatorioView({ initialResult }: { initialResult: ReportResult }) {
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
-  const [transportadora, setTransportadora] = useState<string>("todas")
+  const [transportadora, setTransportadora] = useState<FiltroTransportadoraValor>("todas")
   const [morador, setMorador] = useState<Morador | null>(null)
   const [status, setStatus] = useState<string>("todos")
 
   const filters: ReportFiltersInput = {
     from: from || undefined,
     to: to || undefined,
-    transportadora:
-      transportadora === "todas"
-        ? undefined
-        : (transportadora as ReportFiltersInput["transportadora"]),
+    ...filtroTransportadoraParaParams(transportadora),
     moradorId: morador?.id,
     status:
       status === "todos" ? undefined : (status as ReportFiltersInput["status"]),
@@ -73,6 +80,15 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
     setMorador(null)
     setStatus("todos")
   }
+
+  // Nomes personalizados do catálogo do condomínio (J&T, Shein...) entram
+  // como opções extras do filtro de transportadora.
+  const { data: transportadorasCadastradas } = useQuery({
+    queryKey: TRANSPORTADORAS_QUERY_KEY,
+    // Arrow function: o React Query passa um contexto (signal, client) que
+    // server actions nao conseguem serializar — a chamada falharia em silencio.
+    queryFn: () => listTransportadorasAction(),
+  })
 
   const { data, isFetching } = useQuery({
     queryKey: ["relatorio", filters],
@@ -135,22 +151,34 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
             >
               <SelectTrigger className="w-full">
                 <SelectValue>
-                  {(value: string) =>
-                    value === "todas"
-                      ? "Todas"
-                      : TRANSPORTADORA_LABELS[
-                          value as keyof typeof TRANSPORTADORA_LABELS
-                        ]
-                  }
+                  {(value: FiltroTransportadoraValor) => rotuloFiltroTransportadora(value)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas</SelectItem>
-                {TRANSPORTADORA_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectLabel>{TRANSPORTADORA_COMBOBOX_LABELS.grupoFixas}</SelectLabel>
+                  {TRANSPORTADORA_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={`fixa:${option.value}`}>
+                      {option.value === "outros" ? TRANSPORTADORA_COMBOBOX_LABELS.filtroOutras : option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                {(transportadorasCadastradas?.length ?? 0) > 0 && (
+                  <>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel>
+                        {TRANSPORTADORA_COMBOBOX_LABELS.grupoCadastradas}
+                      </SelectLabel>
+                      {transportadorasCadastradas?.map((item) => (
+                        <SelectItem key={item.id} value={`nome:${item.nome}`}>
+                          {item.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -218,7 +246,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
             <CardTitle className="font-mono text-2xl font-semibold tabular-nums">
               {result.tempoMedioSegundos !== null
                 ? formatDurationSeconds(result.tempoMedioSegundos)
-                : "—"}
+                : "-"}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -318,4 +346,13 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
       </div>
     </div>
   )
+}
+
+function rotuloFiltroTransportadora(value: FiltroTransportadoraValor): string {
+  if (value.startsWith("nome:")) return value.slice("nome:".length)
+  if (value.startsWith("fixa:")) {
+    const fixa = value.slice("fixa:".length) as keyof typeof TRANSPORTADORA_LABELS
+    return fixa === "outros" ? TRANSPORTADORA_COMBOBOX_LABELS.filtroOutras : TRANSPORTADORA_LABELS[fixa]
+  }
+  return "Todas"
 }

@@ -21,8 +21,8 @@ export function PendentesSearchInput({
       <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Buscar morador..."
-        aria-label="Buscar morador"
+        placeholder="Buscar por morador ou rua…"
+        aria-label="Buscar por morador, rua ou número"
         className="h-11 pl-9"
       />
       {value && (
@@ -31,7 +31,7 @@ export function PendentesSearchInput({
           variant="ghost"
           size="icon-sm"
           aria-label="Limpar busca"
-          className="absolute top-1/2 right-1.5 -translate-y-1/2"
+          className="absolute top-1/2 right-1.5 -translate-y-1/2 pointer-coarse:right-0.5 pointer-coarse:size-10"
           onClick={() => onChange("")}
         >
           <X />

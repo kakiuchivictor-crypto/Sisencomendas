@@ -8,7 +8,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { UsuariosList } from "./usuarios-list"
 
 export const metadata: Metadata = {
-  title: "Usuarios — SisEncomendas",
+  title: "Usuários",
 }
 
 export default async function UsuariosPage() {

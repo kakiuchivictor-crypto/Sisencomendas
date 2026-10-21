@@ -135,6 +135,23 @@ CREATE TABLE IF NOT EXISTS sisencomendas.remetentes (
 ALTER TABLE sisencomendas.remetentes ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS remetentes_condominio_nome_idx ON sisencomendas.remetentes (condominio_id, nome);
 
+-- Catalogo de transportadoras personalizadas (J&T, Shein...) por condominio —
+-- complementa o enum fixo sisencomendas.transportadora (por isso o plural:
+-- o singular colide com o enum). Encomendas NAO referenciam esta tabela:
+-- continuam gravando transportadora = 'outros' + transportadora_outro = nome.
+-- Unicidade case-insensitive via indice em lower(nome). Mesmas definicoes
+-- aplicadas em producao (so acrescido IF NOT EXISTS, padrao deste arquivo).
+CREATE TABLE IF NOT EXISTS sisencomendas.transportadoras (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  condominio_id uuid NOT NULL REFERENCES sisencomendas.condominios (id) ON DELETE CASCADE,
+  nome text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT transportadoras_nome_valido CHECK (nome = btrim(nome) AND char_length(nome) BETWEEN 1 AND 60)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS transportadoras_condominio_nome_idx ON sisencomendas.transportadoras (condominio_id, lower(nome));
+ALTER TABLE sisencomendas.transportadoras ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE sisencomendas.transportadoras IS 'Catalogo de nomes de transportadoras por condominio (sem FK a partir de encomendas). RLS por current_condominio_id(); sem UPDATE/DELETE para authenticated.';
+
 CREATE TABLE IF NOT EXISTS sisencomendas.encomendas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Agrupa itens cadastrados juntos numa mesma submissao (ex: 1 caixa + 1
@@ -322,6 +339,18 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+  CREATE POLICY transportadoras_select_tenant ON sisencomendas.transportadoras
+    AS PERMISSIVE FOR SELECT TO authenticated
+    USING (condominio_id = sisencomendas.current_condominio_id());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY transportadoras_insert_tenant ON sisencomendas.transportadoras
+    AS PERMISSIVE FOR INSERT TO authenticated
+    WITH CHECK (condominio_id = sisencomendas.current_condominio_id());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
   CREATE POLICY encomendas_select_tenant ON sisencomendas.encomendas
     AS PERMISSIVE FOR SELECT TO authenticated
     USING (condominio_id = sisencomendas.current_condominio_id());
@@ -384,6 +413,11 @@ GRANT SELECT, INSERT ON sisencomendas.log_atividade TO authenticated;
 -- Sem UPDATE/DELETE: uma vez cadastrado, um remetente fica disponivel pra
 -- sempre (nao ha tela de edicao/exclusao por enquanto).
 GRANT SELECT, INSERT ON sisencomendas.remetentes TO authenticated;
+
+-- Mesmo modelo de remetentes (sem UPDATE/DELETE). REVOKE explicito porque o
+-- Supabase concede privilegios padrao a anon/PUBLIC em tabelas novas.
+REVOKE ALL ON sisencomendas.transportadoras FROM PUBLIC, anon;
+GRANT SELECT, INSERT ON sisencomendas.transportadoras TO authenticated;
 
 GRANT EXECUTE ON FUNCTION sisencomendas.current_condominio_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION sisencomendas.current_usuario_role() TO authenticated;

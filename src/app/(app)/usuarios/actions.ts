@@ -18,7 +18,10 @@ export type UsuarioActionResult =
 export async function listUsuariosAction() {
   const claims = await getSessionClaims()
 
-  if (!claims) return []
+  // Mesma regra da pagina /usuarios: so desenvolvedor lista usuarios. Sem
+  // isso, um porteiro poderia chamar a action direto (o ID dela fica no
+  // bundle do cliente) e obter nome/email/role de todos do condominio.
+  if (!claims || claims.app_role !== "desenvolvedor") return []
 
   return withTenantContext(claims, (tx) => usuarioRepository.listByCondominio(tx))
 }
@@ -29,17 +32,17 @@ export async function createUsuarioAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (claims.app_role !== "desenvolvedor") {
-    return { success: false, error: "Apenas administradores podem cadastrar usuarios." }
+    return { success: false, error: "Apenas administradores podem cadastrar usuários." }
   }
 
   const parsed = usuarioCreateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
   const admin = createSupabaseAdminClient()
@@ -51,9 +54,9 @@ export async function createUsuarioAction(
 
   if (authError || !authUser.user) {
     if (authError?.code === "email_exists") {
-      return { success: false, error: "Este email ja esta em uso." }
+      return { success: false, error: "Este e-mail já está em uso." }
     }
-    return { success: false, error: "Falha ao criar credenciais do usuario." }
+    return { success: false, error: "Falha ao criar credenciais do usuário." }
   }
 
   try {
@@ -71,7 +74,7 @@ export async function createUsuarioAction(
         usuarioId: claims.sub,
         usuarioNome: claims.nome,
         acao: "usuario_criado",
-        descricao: `Cadastrou o usuario ${criado.nome} (${criado.email})`,
+        descricao: `Cadastrou o usuário ${criado.nome} (${criado.email})`,
         entidadeId: criado.id,
       })
 
@@ -87,7 +90,7 @@ export async function createUsuarioAction(
     await admin.auth.admin.deleteUser(authUser.user.id)
 
     if (isUniqueViolation(error)) {
-      return { success: false, error: "Este email ja esta em uso." }
+      return { success: false, error: "Este e-mail já está em uso." }
     }
 
     throw error
@@ -101,17 +104,17 @@ export async function updateUsuarioAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (claims.app_role !== "desenvolvedor") {
-    return { success: false, error: "Apenas administradores podem editar usuarios." }
+    return { success: false, error: "Apenas administradores podem editar usuários." }
   }
 
   const parsed = usuarioUpdateSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
   const usuario = await withTenantContext(claims, async (tx) => {
@@ -123,7 +126,7 @@ export async function updateUsuarioAction(
         usuarioId: claims.sub,
         usuarioNome: claims.nome,
         acao: "usuario_atualizado",
-        descricao: `Atualizou o usuario ${atualizado.nome} (${atualizado.email})`,
+        descricao: `Atualizou o usuário ${atualizado.nome} (${atualizado.email})`,
         entidadeId: atualizado.id,
       })
     }
@@ -132,7 +135,7 @@ export async function updateUsuarioAction(
   })
 
   if (!usuario) {
-    return { success: false, error: "Usuario nao encontrado." }
+    return { success: false, error: "Usuário não encontrado." }
   }
 
   revalidatePath("/usuarios")
@@ -146,15 +149,15 @@ export async function deleteUsuarioAction(id: string): Promise<DeleteUsuarioActi
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (claims.app_role !== "desenvolvedor") {
-    return { success: false, error: "Apenas administradores podem excluir usuarios." }
+    return { success: false, error: "Apenas administradores podem excluir usuários." }
   }
 
   if (id === claims.sub) {
-    return { success: false, error: "Voce nao pode excluir seu proprio usuario." }
+    return { success: false, error: "Você não pode excluir seu próprio usuário." }
   }
 
   try {
@@ -167,7 +170,7 @@ export async function deleteUsuarioAction(id: string): Promise<DeleteUsuarioActi
           usuarioId: claims.sub,
           usuarioNome: claims.nome,
           acao: "usuario_excluido",
-          descricao: `Excluiu o usuario ${removido.nome} (${removido.email})`,
+          descricao: `Excluiu o usuário ${removido.nome} (${removido.email})`,
           entidadeId: removido.id,
         })
       }
@@ -176,7 +179,7 @@ export async function deleteUsuarioAction(id: string): Promise<DeleteUsuarioActi
     if (isForeignKeyViolation(error)) {
       return {
         success: false,
-        error: "Nao e possivel excluir: este usuario possui encomendas registradas.",
+        error: "Não é possível excluir: este usuário possui encomendas registradas.",
       }
     }
 

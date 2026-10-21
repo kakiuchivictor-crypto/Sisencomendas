@@ -83,6 +83,12 @@ export type ReportFilters = {
   from?: Date
   to?: Date
   transportadora?: Transportadora
+  /**
+   * Transportadora personalizada: implica transportadora = 'outros' e
+   * compara o nome sem diferenciar maiúsculas (tem prioridade sobre
+   * `transportadora`).
+   */
+  transportadoraOutro?: string
   moradorId?: string
   status?: EncomendaStatus
 }
@@ -96,7 +102,12 @@ function buildReportConditions(filters: ReportFilters): SQL[] {
   if (filters.to) {
     conditions.push(lt(encomendas.recebidaEm, filters.to))
   }
-  if (filters.transportadora) {
+  if (filters.transportadoraOutro) {
+    conditions.push(
+      eq(encomendas.transportadora, "outros"),
+      sql`lower(btrim(${encomendas.transportadoraOutro})) = lower(${filters.transportadoraOutro})`
+    )
+  } else if (filters.transportadora) {
     conditions.push(eq(encomendas.transportadora, filters.transportadora))
   }
   if (filters.moradorId) {
@@ -355,6 +366,9 @@ export const encomendaRepository = {
       ilike(encomendas.numero, pattern),
       ilike(encomendas.codigoRastreio, pattern),
       ilike(encomendas.notaFiscal, pattern),
+      // Transportadoras personalizadas (J&T, Shein...) gravadas como
+      // 'outros' + transportadora_outro. Parametrizado pelo drizzle.
+      ilike(encomendas.transportadoraOutro, pattern),
     ]
 
     if (matchingTransportadoras.length > 0) {

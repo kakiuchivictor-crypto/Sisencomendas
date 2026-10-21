@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, Trash2 } from "lucide-react"
-import { useState, useTransition } from "react"
-import { type Control, useFieldArray, useForm, useWatch } from "react-hook-form"
+import { useId, useRef, useState, useTransition } from "react"
+import { type Control, useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -25,33 +25,55 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { QuantityStepper } from "@/components/ui/quantity-stepper"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import {
   TIPO_ENCOMENDA_LABELS,
   TIPO_ENCOMENDA_OPTIONS_SEM_CARTA,
-  TRANSPORTADORA_LABELS,
-  TRANSPORTADORA_OPTIONS,
+  type TipoEncomenda,
 } from "@/lib/labels"
 import { offlineAwareErrorMessage } from "@/lib/network"
+import { cn } from "@/lib/utils"
 import {
   type EncomendaCreateInput,
   type EncomendaUpdateInput,
   encomendaCreateSchema,
+  encomendaUpdateComIdentificacaoSchema,
   encomendaUpdateSchema,
 } from "@/schemas/encomenda"
+import { temIdentificacao } from "@/schemas/identificacao"
 import type { EncomendaComDetalhes, Morador } from "@/types/domain"
 
 import { createEncomendaAction, updateEncomendaAction } from "./actions"
+import { IdentificacaoFields } from "./identificacao-fields"
 import { MoradorSearchCombobox } from "./morador-search-combobox"
+import { TransportadoraField } from "./transportadora-field"
 
 import { MoradorFormDialog } from "../moradores/morador-form-dialog"
+
+/**
+ * Dialogo central ampliado (~600px) com cabecalho e rodape fixos e so o
+ * corpo rolando. Abaixo de sm vira folha inferior quase em tela cheia.
+ */
+const FORM_DIALOG_CONTENT_CLASSNAME = cn(
+  "flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl",
+  "max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-h-[calc(100dvh-2.75rem)] max-sm:max-w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:data-open:slide-in-from-bottom-10"
+)
+const FORM_HEADER_CLASSNAME =
+  "shrink-0 border-b px-5 pt-5 pr-14 pb-3.5 max-sm:px-4 max-sm:pt-3 max-sm:pr-14"
+const FORM_TITLE_CLASSNAME = "text-lg font-semibold"
+const FORM_BODY_CLASSNAME =
+  "min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4 max-sm:px-4"
+const FORM_FOOTER_CLASSNAME =
+  "mx-0 mb-0 shrink-0 flex-row items-center justify-end rounded-none px-5 pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] max-sm:px-4 max-sm:*:flex-1"
+
+const NOVO_ITEM: EncomendaCreateInput["itens"][number] = {
+  tipo: "caixa",
+  quantidade: 1,
+  transportadora: "correios",
+  transportadoraOutro: "",
+  codigoRastreio: "",
+  notaFiscal: "",
+}
 
 export function EncomendaFormDialog({
   open,
@@ -66,9 +88,17 @@ export function EncomendaFormDialog({
   encomenda?: EncomendaComDetalhes
   onSuccess?: () => void
 }) {
+  // "Salvar e nova": em vez de resetar o form com useEffect, troca a key e o
+  // formulario de cadastro remonta limpo (mesmo padrao de abrir/fechar).
+  const [createKey, setCreateKey] = useState(0)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className={FORM_DIALOG_CONTENT_CLASSNAME}>
+        <span
+          aria-hidden
+          className="bg-border mx-auto mt-2 block h-1 w-9 shrink-0 rounded-full sm:hidden"
+        />
         {open &&
           (mode === "edit" && encomenda ? (
             <EditEncomendaForm
@@ -79,9 +109,10 @@ export function EncomendaFormDialog({
             />
           ) : (
             <CreateEncomendaForm
-              key="create"
+              key={`create-${createKey}`}
               onOpenChange={onOpenChange}
               onSuccess={onSuccess}
+              onSaveAndNew={() => setCreateKey((current) => current + 1)}
             />
           ))}
       </DialogContent>
@@ -135,6 +166,60 @@ function MoradorField({
   )
 }
 
+/** Texto auxiliar "opcional" ao lado do rotulo (no lugar de "(opcional)"). */
+function OpcionalHint() {
+  return <span className="text-muted-foreground text-xs font-normal">opcional</span>
+}
+
+/**
+ * Tipo em botoes segmentados (1 toque em vez de abrir um select): botoes
+ * com aria-pressed dentro de um grupo rotulado por "Tipo".
+ */
+function TipoSegmentedField({
+  value,
+  onChange,
+  options,
+}: {
+  value: TipoEncomenda
+  onChange: (value: TipoEncomenda) => void
+  options: { value: TipoEncomenda; label: string }[]
+}) {
+  const labelId = useId()
+
+  return (
+    <FormItem>
+      <span id={labelId} className="text-sm leading-none font-medium select-none">
+        Tipo
+      </span>
+      <FormControl>
+        <div role="group" aria-labelledby={labelId} className="flex flex-wrap gap-1.5">
+          {options.map((option) => {
+            const selected = value === option.value
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onChange(option.value)}
+                className={cn(
+                  "h-9 rounded-md border px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:h-11",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background hover:bg-muted dark:bg-input/30"
+                )}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )
+}
+
 /**
  * Um item = um pacote fisico dentro do lote, com sua propria transportadora/
  * rastreio/NF — lotes registrados juntos podem vir de transportadoras
@@ -151,40 +236,45 @@ function EncomendaItemFields({
   canRemove: boolean
   onRemove: () => void
 }) {
-  const transportadora = useWatch({
-    control,
-    name: `itens.${index}.transportadora`,
-  })
-
   return (
-    <div className="space-y-3 rounded-lg border p-3">
-      <div className="flex items-start gap-2">
-        <FormField
+    <fieldset className="min-w-0 space-y-3 rounded-lg border p-3">
+      <legend className="sr-only">Item {index + 1}</legend>
+      <div className="flex items-center justify-between">
+        <span
+          aria-hidden
+          className="text-muted-foreground font-mono text-xs font-semibold tracking-wider uppercase"
+        >
+          Item {index + 1}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Remover item ${index + 1}`}
+          disabled={!canRemove}
+          onClick={onRemove}
+        >
+          <Trash2 />
+        </Button>
+      </div>
+
+      <FormField
+        control={control}
+        name={`itens.${index}.tipo`}
+        render={({ field }) => (
+          <TipoSegmentedField
+            value={field.value}
+            onChange={field.onChange}
+            options={TIPO_ENCOMENDA_OPTIONS_SEM_CARTA}
+          />
+        )}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <TransportadoraField
           control={control}
-          name={`itens.${index}.tipo`}
-          render={({ field }) => (
-            <FormItem className="flex-1">
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {(value: keyof typeof TIPO_ENCOMENDA_LABELS) =>
-                        TIPO_ENCOMENDA_LABELS[value]
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {TIPO_ENCOMENDA_OPTIONS_SEM_CARTA.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          transportadoraName={`itens.${index}.transportadora`}
+          transportadoraOutroName={`itens.${index}.transportadoraOutro`}
         />
 
         <FormField
@@ -192,6 +282,7 @@ function EncomendaItemFields({
           name={`itens.${index}.quantidade`}
           render={({ field }) => (
             <FormItem>
+              <FormLabel>Quantidade</FormLabel>
               <FormControl>
                 <QuantityStepper
                   value={field.value}
@@ -203,93 +294,55 @@ function EncomendaItemFields({
             </FormItem>
           )}
         />
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Remover item"
-          disabled={!canRemove}
-          onClick={onRemove}
-        >
-          <Trash2 />
-        </Button>
       </div>
 
-      <FormField
+      <IdentificacaoFields
         control={control}
-        name={`itens.${index}.transportadora`}
+        rastreioName={`itens.${index}.codigoRastreio`}
+        notaFiscalName={`itens.${index}.notaFiscal`}
+      />
+    </fieldset>
+  )
+}
+
+function EnderecoFields({
+  control,
+}: {
+  control: Control<EncomendaCreateInput> | Control<EncomendaUpdateInput>
+}) {
+  // Rua/Numero tem o mesmo nome nos dois schemas; o cast evita duplicar o JSX.
+  const sharedControl = control as Control<EncomendaCreateInput>
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <div className="col-span-2">
+        <FormField
+          control={sharedControl}
+          name="rua"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Rua</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <FormField
+        control={sharedControl}
+        name="numero"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Transportadora</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {(value: keyof typeof TRANSPORTADORA_LABELS) =>
-                      TRANSPORTADORA_LABELS[value]
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {TRANSPORTADORA_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormLabel>Numero</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
-      {transportadora === "outros" && (
-        <FormField
-          control={control}
-          name={`itens.${index}.transportadoraOutro`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Qual transportadora?</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome da transportadora" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <FormField
-          control={control}
-          name={`itens.${index}.codigoRastreio`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: BR123456789BR" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={control}
-          name={`itens.${index}.notaFiscal`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nota fiscal (opcional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Numero da NF" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
     </div>
   )
 }
@@ -297,11 +350,18 @@ function EncomendaItemFields({
 function CreateEncomendaForm({
   onOpenChange,
   onSuccess,
+  onSaveAndNew,
 }: {
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  /** Chamado apos salvar via "Salvar e nova" — o pai remonta o form limpo. */
+  onSaveAndNew: () => void
 }) {
   const [isPending, startTransition] = useTransition()
+  // Guarda sincrona contra envio duplicado: num duplo clique rapido o segundo
+  // submit chega antes de isPending virar true (o botao ainda esta habilitado).
+  const submittingRef = useRef(false)
+  const itensHeadingId = useId()
   const { selectedMorador, setSelectedMorador, quickCreate, setQuickCreate } =
     useMoradorField(null)
 
@@ -313,16 +373,7 @@ function CreateEncomendaForm({
       moradorId: "",
       rua: "",
       numero: "",
-      itens: [
-        {
-          tipo: "caixa",
-          quantidade: 1,
-          transportadora: "correios",
-          transportadoraOutro: "",
-          codigoRastreio: "",
-          notaFiscal: "",
-        },
-      ],
+      itens: [{ ...NOVO_ITEM }],
       observacoes: "",
     },
   })
@@ -339,7 +390,10 @@ function CreateEncomendaForm({
     form.setValue("numero", morador.numero, { shouldValidate: true })
   }
 
-  function onSubmit(values: EncomendaCreateInput) {
+  function onSubmit(values: EncomendaCreateInput, saveAndNew: boolean) {
+    if (submittingRef.current) return
+    submittingRef.current = true
+
     startTransition(async () => {
       try {
         const result = await createEncomendaAction(values)
@@ -354,61 +408,90 @@ function CreateEncomendaForm({
             ? `${result.encomendas.length} itens cadastrados com sucesso.`
             : "Encomenda cadastrada com sucesso."
         )
-        onOpenChange(false)
         onSuccess?.()
+        if (saveAndNew) {
+          onSaveAndNew()
+        } else {
+          onOpenChange(false)
+        }
       } catch {
         toast.error(offlineAwareErrorMessage("Nao foi possivel registrar a encomenda."))
+      } finally {
+        submittingRef.current = false
       }
     })
   }
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>Cadastrar encomenda</DialogTitle>
+      <DialogHeader className={FORM_HEADER_CLASSNAME}>
+        <DialogTitle className={FORM_TITLE_CLASSNAME}>Cadastrar encomenda</DialogTitle>
         <DialogDescription>
           Busque o morador, confira o endereco e adicione um ou mais itens.
         </DialogDescription>
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="moradorId"
-            render={() => (
-              <MoradorField
-                selectedMorador={selectedMorador}
-                onMoradorChange={handleMoradorChange}
-                onRequestCreate={(term) => setQuickCreate({ open: true, searchTerm: term })}
-              />
-            )}
-          />
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
-              <FormField
-                control={form.control}
-                name="rua"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rua</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+        <form
+          onSubmit={(event) =>
+            void form.handleSubmit((values) => onSubmit(values, false))(event)
+          }
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <div className={FORM_BODY_CLASSNAME}>
             <FormField
               control={form.control}
-              name="numero"
+              name="moradorId"
+              render={() => (
+                <MoradorField
+                  selectedMorador={selectedMorador}
+                  onMoradorChange={handleMoradorChange}
+                  onRequestCreate={(term) =>
+                    setQuickCreate({ open: true, searchTerm: term })
+                  }
+                />
+              )}
+            />
+
+            <EnderecoFields control={form.control} />
+
+            <section aria-labelledby={itensHeadingId} className="space-y-3">
+              <h3
+                id={itensHeadingId}
+                className="font-sans text-sm leading-none font-medium tracking-normal"
+              >
+                Itens
+              </h3>
+
+              {fields.map((itemField, index) => (
+                <EncomendaItemFields
+                  key={itemField.id}
+                  control={form.control}
+                  index={index}
+                  canRemove={fields.length > 1}
+                  onRemove={() => remove(index)}
+                />
+              ))}
+
+              <Button type="button" variant="outline" onClick={() => append({ ...NOVO_ITEM })}>
+                <Plus />
+                Adicionar outro item
+              </Button>
+            </section>
+
+            <FormField
+              control={form.control}
+              name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Numero</FormLabel>
+                  <FormLabel>
+                    Observacoes <OpcionalHint />
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Textarea
+                      placeholder="Ex: caixa grande, precisa assinar..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -416,65 +499,28 @@ function CreateEncomendaForm({
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm leading-none font-medium">Itens</label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  append({
-                    tipo: "caixa",
-                    quantidade: 1,
-                    transportadora: "correios",
-                    transportadoraOutro: "",
-                    codigoRastreio: "",
-                    notaFiscal: "",
-                  })
-                }
-              >
-                <Plus />
-                Adicionar item
-              </Button>
-            </div>
-
-            {fields.map((itemField, index) => (
-              <EncomendaItemFields
-                key={itemField.id}
-                control={form.control}
-                index={index}
-                canRemove={fields.length > 1}
-                onRemove={() => remove(index)}
-              />
-            ))}
-          </div>
-
-          <FormField
-            control={form.control}
-            name="observacoes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Ex: caixa grande, precisa assinar..."
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <DialogFooter>
+          <DialogFooter className={FORM_FOOTER_CLASSNAME}>
+            {/* No celular o "X" do cabecalho fecha; o rodape fica so com as acoes de salvar. */}
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="lg"
+              className="max-sm:hidden"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
               Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={isPending}
+              onClick={(event) =>
+                void form.handleSubmit((values) => onSubmit(values, true))(event)
+              }
+            >
+              Salvar e nova
             </Button>
             <Button type="submit" size="lg" disabled={isPending}>
               {isPending ? "Salvando..." : "Salvar"}
@@ -506,11 +552,20 @@ function EditEncomendaForm({
   onSuccess?: () => void
 }) {
   const [isPending, startTransition] = useTransition()
+  // Mesma guarda do formulario de cadastro (duplo clique em "Salvar").
+  const submittingRef = useRef(false)
   const { selectedMorador, setSelectedMorador, quickCreate, setQuickCreate } =
     useMoradorField(moradorFromEncomenda(encomenda))
 
+  // Regra de NF/rastreio na edicao: so vale se o registro ja tinha um dos
+  // dois (legado sem nenhum continua editavel). O form remonta por key, entao
+  // o valor e fixo durante a vida deste componente.
+  const exigeIdentificacao = temIdentificacao(encomenda)
+
   const form = useForm<EncomendaUpdateInput>({
-    resolver: zodResolver(encomendaUpdateSchema),
+    resolver: zodResolver(
+      exigeIdentificacao ? encomendaUpdateComIdentificacaoSchema : encomendaUpdateSchema
+    ),
     mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
@@ -527,8 +582,6 @@ function EditEncomendaForm({
     },
   })
 
-  const transportadora = useWatch({ control: form.control, name: "transportadora" })
-
   function handleMoradorChange(morador: Morador) {
     setSelectedMorador(morador)
     form.setValue("moradorId", morador.id, { shouldValidate: true })
@@ -537,6 +590,9 @@ function EditEncomendaForm({
   }
 
   function onSubmit(values: EncomendaUpdateInput) {
+    if (submittingRef.current) return
+    submittingRef.current = true
+
     startTransition(async () => {
       try {
         const result = await updateEncomendaAction(encomenda.id, values)
@@ -551,6 +607,8 @@ function EditEncomendaForm({
         onSuccess?.()
       } catch {
         toast.error(offlineAwareErrorMessage("Nao foi possivel atualizar a encomenda."))
+      } finally {
+        submittingRef.current = false
       }
     })
   }
@@ -562,51 +620,89 @@ function EditEncomendaForm({
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>Editar encomenda</DialogTitle>
+      <DialogHeader className={FORM_HEADER_CLASSNAME}>
+        <DialogTitle className={FORM_TITLE_CLASSNAME}>Editar encomenda</DialogTitle>
         <DialogDescription>
           Busque o morador, confira o endereco e escolha a transportadora.
         </DialogDescription>
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="moradorId"
-            render={() => (
-              <MoradorField
-                selectedMorador={selectedMorador}
-                onMoradorChange={handleMoradorChange}
-                onRequestCreate={(term) => setQuickCreate({ open: true, searchTerm: term })}
-              />
-            )}
-          />
+        <form
+          onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <div className={FORM_BODY_CLASSNAME}>
+            <FormField
+              control={form.control}
+              name="moradorId"
+              render={() => (
+                <MoradorField
+                  selectedMorador={selectedMorador}
+                  onMoradorChange={handleMoradorChange}
+                  onRequestCreate={(term) =>
+                    setQuickCreate({ open: true, searchTerm: term })
+                  }
+                />
+              )}
+            />
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+            <EnderecoFields control={form.control} />
+
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <TipoSegmentedField
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={tipoOptions}
+                />
+              )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TransportadoraField
+                control={form.control}
+                transportadoraName="transportadora"
+                transportadoraOutroName="transportadoraOutro"
+              />
+
               <FormField
                 control={form.control}
-                name="rua"
+                name="quantidade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rua</FormLabel>
+                    <FormLabel>Quantidade</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <QuantityStepper value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <IdentificacaoFields
+              control={form.control}
+              rastreioName="codigoRastreio"
+              notaFiscalName="notaFiscal"
+              obrigatorio={exigeIdentificacao}
+            />
+
             <FormField
               control={form.control}
-              name="numero"
+              name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Numero</FormLabel>
+                  <FormLabel>
+                    Observacoes <OpcionalHint />
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Textarea
+                      placeholder="Ex: caixa grande, precisa assinar..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -614,147 +710,11 @@ function EditEncomendaForm({
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="transportadora"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Transportadora</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue>
-                        {(value: keyof typeof TRANSPORTADORA_LABELS) =>
-                          TRANSPORTADORA_LABELS[value]
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {TRANSPORTADORA_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="tipo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue>
-                          {(value: keyof typeof TIPO_ENCOMENDA_LABELS) =>
-                            TIPO_ENCOMENDA_LABELS[value]
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {tipoOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="quantidade"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quantidade</FormLabel>
-                  <FormControl>
-                    <QuantityStepper value={field.value} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {transportadora === "outros" && (
-            <FormField
-              control={form.control}
-              name="transportadoraOutro"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Qual transportadora?</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da transportadora" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="codigoRastreio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Codigo de rastreio (opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: BR123456789BR" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notaFiscal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nota fiscal (opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Numero da NF" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="observacoes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Observacoes (opcional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Ex: caixa grande, precisa assinar..."
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <DialogFooter>
+          <DialogFooter className={FORM_FOOTER_CLASSNAME}>
             <Button
               type="button"
               variant="outline"
+              size="lg"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >

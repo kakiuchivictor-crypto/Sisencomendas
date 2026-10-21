@@ -29,6 +29,7 @@ export function NovaCorrespondenciaButton() {
           void queryClient.invalidateQueries({
             queryKey: ["cards-stats", "correspondencia"],
           })
+          void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
         }}
       />
     </>

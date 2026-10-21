@@ -9,7 +9,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { MoradoresList } from "./moradores-list"
 
 export const metadata: Metadata = {
-  title: "Moradores — SisEncomendas",
+  title: "Moradores",
 }
 
 export default async function MoradoresPage() {

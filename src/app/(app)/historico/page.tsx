@@ -9,7 +9,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { HistoricoSearch } from "./historico-search"
 
 export const metadata: Metadata = {
-  title: "Historico — SisEncomendas",
+  title: "Histórico",
 }
 
 export default async function HistoricoPage() {

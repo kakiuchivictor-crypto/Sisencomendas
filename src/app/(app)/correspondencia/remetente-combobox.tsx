@@ -36,7 +36,9 @@ export function RemetenteCombobox({
 
   const { data: remetentes } = useQuery({
     queryKey: ["remetentes"],
-    queryFn: listRemetentesAction,
+    // Arrow function: o React Query passa um contexto (signal, client) que
+    // server actions nao conseguem serializar — a chamada falharia em silencio.
+    queryFn: () => listRemetentesAction(),
     enabled: open,
   })
 

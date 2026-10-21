@@ -1,15 +1,19 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, CheckCircle2, Inbox, Package } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Filter, Inbox, Package, X } from "lucide-react"
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import type { EncomendaCategoria } from "@/repositories/encomenda-repository"
 import { cn } from "@/lib/utils"
 
 import type { CardsStats } from "./actions"
 import { getCardsStatsAction } from "./actions"
 
+/**
+ * Faixa unica de indicadores (KPIs). O ultimo, "Mais de 7 dias", vira um
+ * botao de filtro quando onAtrasadasClick e informado.
+ */
 export function StatCards({
   initialStats,
   categoria = "encomenda",
@@ -18,7 +22,7 @@ export function StatCards({
 }: {
   initialStats: CardsStats
   categoria?: EncomendaCategoria
-  /** Quando informado, o card "Pendentes ha mais de 7 dias" vira um filtro clicavel. */
+  /** Quando informado, o indicador "Mais de 7 dias" vira um filtro clicavel. */
   onAtrasadasClick?: () => void
   atrasadasActive?: boolean
 }) {
@@ -35,69 +39,86 @@ export function StatCards({
 
   const stats = data ?? initialStats
 
-  const cards = [
+  const kpis = [
     { label: "Pendentes", value: stats.pendentes, icon: Package },
     { label: "Recebidas hoje", value: stats.recebidasHoje, icon: Inbox },
     { label: "Entregues hoje", value: stats.entreguesHoje, icon: CheckCircle2 },
-    {
-      label: "Pendentes ha mais de 7 dias",
-      value: stats.pendentesAntigas,
-      icon: AlertTriangle,
-      warn: stats.pendentesAntigas > 0,
-      clickable: Boolean(onAtrasadasClick) && stats.pendentesAntigas > 0,
-    },
   ]
 
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-      {cards.map((card) => (
-        <Card
-          key={card.label}
-          onClick={card.clickable ? onAtrasadasClick : undefined}
-          role={card.clickable ? "button" : undefined}
-          tabIndex={card.clickable ? 0 : undefined}
-          onKeyDown={
-            card.clickable
-              ? (event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault()
-                    onAtrasadasClick?.()
-                  }
-                }
-              : undefined
-          }
-          aria-pressed={card.clickable ? atrasadasActive : undefined}
-          className={cn(
-            card.warn && "ring-destructive/25 bg-destructive/[0.03]",
-            card.clickable &&
-              "cursor-pointer transition-shadow hover:ring-destructive/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-            card.clickable && atrasadasActive && "ring-2 ring-destructive/60"
+  const atrasadas = stats.pendentesAntigas
+  const warn = atrasadas > 0
+  // Continua clicavel com 0 se o filtro estiver ligado, para poder desligar.
+  const clickable = Boolean(onAtrasadasClick) && (warn || atrasadasActive)
+
+  const cellClassName =
+    "flex min-w-0 flex-col gap-1 border-border px-4 py-3.5 sm:px-5 [&:nth-child(n+3)]:border-t md:[&:nth-child(n+3)]:border-t-0 [&:nth-child(even)]:border-l md:[&:not(:first-child)]:border-l"
+
+  const atrasadasContent = (
+    <>
+      <span className="flex items-center gap-1.5 text-xs font-semibold">
+        <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+        Mais de 7 dias
+      </span>
+      <span className="font-mono text-2xl leading-tight font-semibold tracking-tight tabular-nums sm:text-3xl">
+        {atrasadas}
+      </span>
+      {clickable && (
+        <span className="flex items-center gap-1 text-xs font-medium">
+          {atrasadasActive ? (
+            <>
+              <X className="size-3.5 shrink-0" aria-hidden />
+              Filtrando · toque para limpar
+            </>
+          ) : (
+            <>
+              <Filter className="size-3.5 shrink-0" aria-hidden />
+              Toque para filtrar
+            </>
           )}
-        >
-          <CardHeader className="gap-3">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-medium">
-                {card.label}
-                {card.clickable && (
-                  <span className="text-muted-foreground/70 hidden font-normal sm:inline">
-                    {" "}
-                    · {atrasadasActive ? "filtrando" : "clique p/ filtrar"}
-                  </span>
-                )}
-              </CardDescription>
-              <card.icon
-                className={cn(
-                  "size-4",
-                  card.warn ? "text-destructive" : "text-primary/70"
-                )}
-              />
-            </div>
-            <CardTitle className="font-mono text-3xl font-semibold tabular-nums">
-              {card.value}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+        </span>
+      )}
+    </>
+  )
+
+  const atrasadasClassName = cn(
+    cellClassName,
+    "text-left",
+    warn ? "bg-danger-soft text-danger-ink" : "text-muted-foreground",
+    clickable &&
+      "cursor-pointer transition-colors outline-none hover:bg-[color-mix(in_oklch,var(--danger-soft),var(--danger-ink)_8%)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+    clickable &&
+      atrasadasActive &&
+      "bg-destructive text-destructive-foreground hover:bg-[color-mix(in_oklch,var(--destructive),black_10%)]"
+  )
+
+  return (
+    <Card className="grid grid-cols-2 gap-0 py-0 md:grid-cols-4">
+      {kpis.map((kpi) => (
+        <div key={kpi.label} className={cellClassName}>
+          <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold">
+            <kpi.icon className="text-primary/70 size-3.5 shrink-0" aria-hidden />
+            {kpi.label}
+          </span>
+          <span className="font-mono text-2xl leading-tight font-semibold tracking-tight tabular-nums sm:text-3xl">
+            {kpi.value}
+          </span>
+        </div>
       ))}
-    </div>
+
+      {clickable ? (
+        <button
+          type="button"
+          onClick={onAtrasadasClick}
+          aria-pressed={atrasadasActive}
+          // Nome fixo: o estado (ligado/desligado) fica so no aria-pressed.
+          aria-label={`Filtrar pendentes há mais de 7 dias: ${atrasadas}`}
+          className={atrasadasClassName}
+        >
+          {atrasadasContent}
+        </button>
+      ) : (
+        <div className={atrasadasClassName}>{atrasadasContent}</div>
+      )}
+    </Card>
   )
 }

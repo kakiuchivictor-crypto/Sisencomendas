@@ -8,7 +8,7 @@ import { getSessionClaims } from "@/services/auth/session"
 import { ConfiguracoesForm } from "./configuracoes-form"
 
 export const metadata: Metadata = {
-  title: "Configuracoes — SisEncomendas",
+  title: "Configurações",
 }
 
 export default async function ConfiguracoesPage() {

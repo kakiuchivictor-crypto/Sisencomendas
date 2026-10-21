@@ -1,12 +1,18 @@
 import { ImageResponse } from "next/og"
 import type { NextRequest } from "next/server"
 
-export const runtime = "edge"
+import {
+  BRAND_INK,
+  BRAND_TILE,
+  CUBE_EDGES,
+  CUBE_OUTLINE,
+  CUBE_TOP,
+} from "@/components/brand/logixone-logo"
 
 /**
  * Icone PWA (192x192 ou 512x512, via ?size=) gerado a partir do mesmo
- * desenho de src/app/icon.svg — usado pelo manifest.ts para o icone da tela
- * inicial ao instalar o app no celular.
+ * simbolo de src/components/brand/logixone-logo.tsx (= src/app/icon.svg) —
+ * usado pelo manifest.ts para o icone da tela inicial ao instalar o app.
  */
 export async function GET(request: NextRequest) {
   const sizeParam = Number(request.nextUrl.searchParams.get("size"))
@@ -30,16 +36,17 @@ export async function GET(request: NextRequest) {
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <rect width="32" height="32" rx="8" fill="#2f3ea3" />
+          <rect width="32" height="32" rx="8" fill={BRAND_TILE} />
+          <path d={CUBE_TOP} fill={BRAND_INK} fillOpacity="0.28" />
           <path
-            d="M16 6.5l8.5 4.9v9.2L16 25.5l-8.5-4.9v-9.2L16 6.5z"
-            stroke="#ffffff"
+            d={CUBE_OUTLINE}
+            stroke={BRAND_INK}
             strokeWidth="1.8"
             strokeLinejoin="round"
           />
           <path
-            d="M7.5 11.4L16 16.3l8.5-4.9M16 16.3v9.2"
-            stroke="#ffffff"
+            d={CUBE_EDGES}
+            stroke={BRAND_INK}
             strokeWidth="1.8"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -47,6 +54,13 @@ export async function GET(request: NextRequest) {
         </svg>
       </div>
     ),
-    { width: size, height: size }
+    {
+      width: size,
+      height: size,
+      // Rota publica e so existem 2 variantes (192/512): deixa a CDN da
+      // Vercel guardar o PNG para nao renderizar a imagem a cada requisicao
+      // (o padrao do next/og e max-age=0, que permitiria forcar CPU a toa).
+      headers: { "Cache-Control": "public, max-age=86400, s-maxage=604800" },
+    }
   )
 }

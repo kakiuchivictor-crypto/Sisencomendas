@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sem conexão — SisEncomendas</title>
+    <title>Sem conexão | LogixOne</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -37,12 +37,34 @@
         max-width: 380px;
         text-align: center;
       }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 28px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+      }
+      .brand svg {
+        width: 32px;
+        height: 32px;
+      }
+      .brand b {
+        font-weight: 600;
+        color: #004296;
+      }
+      @media (prefers-color-scheme: dark) {
+        .brand b {
+          color: #a9b6f5;
+        }
+      }
       .icon {
         width: 64px;
         height: 64px;
         margin: 0 auto 20px;
         border-radius: 16px;
-        background: #2f3ea3;
+        background: #004296;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -65,7 +87,7 @@
         appearance: none;
         border: none;
         border-radius: 10px;
-        background: #2f3ea3;
+        background: #004296;
         color: #fff;
         font-size: 0.9rem;
         font-weight: 600;
@@ -79,6 +101,16 @@
   </head>
   <body>
     <div class="card">
+      <!-- Simbolo LogixOne: mesmo desenho de src/app/icon.svg -->
+      <div class="brand">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#004296" />
+          <path d="M16 6.5l8.5 4.9L16 16.3l-8.5-4.9L16 6.5z" fill="#f6f9fd" fill-opacity="0.28" />
+          <path d="M16 6.5l8.5 4.9v9.2L16 25.5l-8.5-4.9v-9.2L16 6.5z" stroke="#f6f9fd" stroke-width="1.8" stroke-linejoin="round" />
+          <path d="M7.5 11.4L16 16.3l8.5-4.9M16 16.3v9.2" stroke="#f6f9fd" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+        </svg>
+        <span>Logix<b>One</b></span>
+      </div>
       <div class="icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 3l18 18M8.5 8.5A5 5 0 0 0 5 12M12 5c1.7 0 3.3.5 4.6 1.4M19 9a9 9 0 0 1 2 4M2 9a9 9 0 0 1 2.6-3.4" />

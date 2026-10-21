@@ -31,13 +31,13 @@ export async function createMoradorAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   const parsed = moradorSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
   const morador = await withTenantContext(claims, async (tx) => {
@@ -71,7 +71,7 @@ export async function updateMoradorAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (!isAdminLike(claims.app_role)) {
@@ -84,7 +84,7 @@ export async function updateMoradorAction(
   const parsed = moradorSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false, error: "Preencha os campos obrigatorios." }
+    return { success: false, error: "Preencha os campos obrigatórios." }
   }
 
   const morador = await withTenantContext(claims, async (tx) => {
@@ -108,7 +108,7 @@ export async function updateMoradorAction(
   })
 
   if (!morador) {
-    return { success: false, error: "Morador nao encontrado." }
+    return { success: false, error: "Morador não encontrado." }
   }
 
   revalidatePath("/moradores")
@@ -124,7 +124,7 @@ export async function deleteMoradorAction(
   const claims = await getSessionClaims()
 
   if (!claims) {
-    return { success: false, error: "Sessao expirada. Faca login novamente." }
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
   }
 
   if (!isAdminLike(claims.app_role)) {
@@ -154,7 +154,7 @@ export async function deleteMoradorAction(
       return {
         success: false,
         error:
-          "Nao e possivel excluir: este morador possui encomendas registradas.",
+          "Não é possível excluir: este morador possui encomendas registradas.",
       }
     }
 

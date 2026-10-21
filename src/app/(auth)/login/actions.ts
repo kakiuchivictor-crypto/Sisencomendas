@@ -16,7 +16,7 @@ export async function loginAction(input: {
   const parsed = loginSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { error: "Preencha email e senha corretamente." }
+    return { error: "Preencha e-mail e senha corretamente." }
   }
 
   const result = await signInWithPassword(parsed.data.email, parsed.data.password)
@@ -27,7 +27,7 @@ export async function loginAction(input: {
         error: "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.",
       }
     }
-    return { error: "Email ou senha incorretos." }
+    return { error: "E-mail ou senha incorretos." }
   }
 
   redirect("/")

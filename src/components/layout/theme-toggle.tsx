@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 const emptySubscribe = () => () => {}
 
 /** true apos a hidratacao no cliente; false no SSR — evita mismatch de tema. */
-function useIsClient() {
+export function useIsClient() {
   return useSyncExternalStore(
     emptySubscribe,
     () => true,
