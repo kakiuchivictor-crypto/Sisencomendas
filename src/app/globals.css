@@ -3,6 +3,10 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+/* Telas baixas (notebooks 1366x768 com a barra do navegador, celular
+   deitado): versao compacta do login para caber sem rolagem. */
+@custom-variant short (@media (max-height: 860px));
+@custom-variant tiny (@media (max-height: 700px));
 
 @theme inline {
   --color-background: var(--background);

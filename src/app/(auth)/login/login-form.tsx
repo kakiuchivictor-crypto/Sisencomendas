@@ -27,7 +27,7 @@ function isCapsLockOn(event: React.KeyboardEvent) {
  * no hover/foco, e no foco a linha engrossa para 3px na cor de destaque.
  */
 const fieldClassName =
-  "border-field-line text-foreground placeholder:text-muted-foreground/80 h-[52px] w-full rounded-t-sm rounded-b-none border-0 border-b-[1.5px] bg-transparent px-1 py-2.5 text-lg transition-[border-color,box-shadow,background-color] duration-200 outline-none hover:bg-muted/60 focus:border-primary focus:bg-accent/40 focus:shadow-[0_1.5px_0_0_var(--primary)] aria-invalid:border-danger-ink aria-invalid:shadow-[0_1.5px_0_0_var(--danger-ink)] motion-reduce:transition-none pointer-coarse:h-14"
+  "border-field-line text-foreground placeholder:text-muted-foreground/80 h-[52px] w-full rounded-t-sm rounded-b-none border-0 border-b-[1.5px] bg-transparent px-1 py-2.5 text-lg transition-[border-color,box-shadow,background-color] duration-200 outline-none hover:bg-muted/60 focus:border-primary focus:bg-accent/40 focus:shadow-[0_1.5px_0_0_var(--primary)] aria-invalid:border-danger-ink aria-invalid:shadow-[0_1.5px_0_0_var(--danger-ink)] motion-reduce:transition-none pointer-coarse:h-14 short:h-12 short:text-base"
 
 const labelClassName = "text-foreground text-sm font-semibold data-[error=true]:text-foreground"
 
@@ -74,7 +74,7 @@ export function LoginForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         noValidate
         aria-busy={isPending}
-        className="grid gap-[22px]"
+        className="short:gap-4 grid gap-[22px]"
       >
         {serverError ? (
           <div
@@ -184,7 +184,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="group bg-foreground text-background hover:bg-primary hover:text-primary-foreground disabled:bg-primary disabled:text-primary-foreground mt-1.5 flex min-h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-full text-base font-semibold tracking-[0.01em] transition-[background-color,color,transform] duration-200 outline-none focus-visible:outline-[2.5px] focus-visible:outline-offset-3 focus-visible:outline-primary active:translate-y-px disabled:cursor-progress motion-reduce:transition-none"
+          className="group bg-foreground text-background hover:bg-primary hover:text-primary-foreground disabled:bg-primary disabled:text-primary-foreground short:min-h-12 mt-1.5 flex min-h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-full text-base font-semibold tracking-[0.01em] transition-[background-color,color,transform] duration-200 outline-none focus-visible:outline-[2.5px] focus-visible:outline-offset-3 focus-visible:outline-primary active:translate-y-px disabled:cursor-progress motion-reduce:transition-none"
         >
           {isPending ? (
             <>

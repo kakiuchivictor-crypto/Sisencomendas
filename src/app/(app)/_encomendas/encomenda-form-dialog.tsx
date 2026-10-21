@@ -300,6 +300,11 @@ function EncomendaItemFields({
         control={control}
         rastreioName={`itens.${index}.codigoRastreio`}
         notaFiscalName={`itens.${index}.notaFiscal`}
+        transportadora={{
+          transportadoraName: `itens.${index}.transportadora`,
+          transportadoraOutroName: `itens.${index}.transportadoraOutro`,
+          aplicar: "se-nao-escolhida",
+        }}
       />
     </fieldset>
   )
@@ -688,6 +693,11 @@ function EditEncomendaForm({
               rastreioName="codigoRastreio"
               notaFiscalName="notaFiscal"
               obrigatorio={exigeIdentificacao}
+              transportadora={{
+                transportadoraName: "transportadora",
+                transportadoraOutroName: "transportadoraOutro",
+                aplicar: "se-vazio",
+              }}
             />
 
             <FormField

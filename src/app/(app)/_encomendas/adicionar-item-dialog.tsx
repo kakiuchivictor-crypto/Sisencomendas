@@ -206,6 +206,11 @@ function AdicionarEncomendaItemForm({
             control={form.control}
             rastreioName="codigoRastreio"
             notaFiscalName="notaFiscal"
+            transportadora={{
+              transportadoraName: "transportadora",
+              transportadoraOutroName: "transportadoraOutro",
+              aplicar: "se-nao-escolhida",
+            }}
           />
 
           <FormField
