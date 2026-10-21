@@ -5,55 +5,31 @@ import { ApplyCondominioTheme } from "@/components/layout/apply-condominio-theme
 import { BottomNav } from "@/components/layout/bottom-nav"
 import type { NavItem } from "@/components/layout/nav-types"
 import { RealtimeSync } from "@/components/layout/realtime-sync"
-import { withTenantContext } from "@/lib/db"
 import { isAdminLike } from "@/lib/labels"
-import { condominioRepository } from "@/repositories/condominio-repository"
 import { encomendaRepository } from "@/repositories/encomenda-repository"
-import { usuarioRepository } from "@/repositories/usuario-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { withSession } from "@/services/auth/session"
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const claims = await getSessionClaims()
+  // Uma transacao so: perfil + condominio (nome/tema) da sessao e os
+  // contadores das abas (valor inicial; depois o cliente atualiza via
+  // Realtime/getNavCountsAction). O layout nao e refeito a cada troca de aba
+  // (o App Router so renderiza o segmento da pagina), entao isto roda no
+  // carregamento inicial e quando algo forca um refresh do layout.
+  const session = await withSession((tx) => encomendaRepository.navCounts(tx))
 
-  if (!claims) {
+  if (!session) {
     redirect("/login")
   }
 
-  const { condominio, usuario, navCounts } = await withTenantContext(
-    claims,
-    async (tx) => {
-      // Os dois COUNT de pendentes alimentam os contadores das abas (valor
-      // inicial; depois o cliente atualiza via Realtime/getNavCountsAction).
-      const [condominio, usuario, encomendasPendentes, correspondenciasPendentes] =
-        await Promise.all([
-          condominioRepository.findById(tx, claims.condominio_id),
-          usuarioRepository.findById(tx, claims.sub),
-          encomendaRepository.countPendentes(tx, "encomenda"),
-          encomendaRepository.countPendentes(tx, "correspondencia"),
-        ])
-
-      return {
-        condominio,
-        usuario,
-        navCounts: {
-          encomendas: encomendasPendentes,
-          correspondencias: correspondenciasPendentes,
-        },
-      }
-    }
-  )
-
-  if (!condominio || !usuario) {
-    redirect("/login")
-  }
+  const { claims, condominio, dados: navCounts } = session
 
   // Relatorios aparece como aba so para administracao/desenvolvedor (mesma
   // regra do redirect em relatorios/page.tsx).
-  const relatoriosItem: NavItem[] = isAdminLike(usuario.role)
+  const relatoriosItem: NavItem[] = isAdminLike(claims.app_role)
     ? [{ href: "/relatorios", label: "Relatórios" }]
     : []
 
@@ -68,7 +44,7 @@ export default async function AppLayout({
 
   // Engrenagem: so o que e exclusivo do perfil desenvolvedor.
   const adminMenuItems = [
-    ...(usuario.role === "desenvolvedor"
+    ...(claims.app_role === "desenvolvedor"
       ? [
           { href: "/atividade", label: "Atividade" },
           { href: "/usuarios", label: "Usuários" },
@@ -83,8 +59,8 @@ export default async function AppLayout({
       <RealtimeSync condominioId={condominio.id} />
       <AppHeader
         condominioNome={condominio.nome}
-        usuarioNome={usuario.nome}
-        usuarioRole={usuario.role}
+        usuarioNome={claims.nome}
+        usuarioRole={claims.app_role}
         navItems={navItems}
         adminMenuItems={adminMenuItems}
         navCounts={navCounts}

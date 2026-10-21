@@ -2,8 +2,11 @@
 
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2, PackageCheck } from "lucide-react"
+import { useMemo } from "react"
 
+import { refetchAoMontar, useDadosDoServidor } from "@/hooks/use-dados-do-servidor"
 import { useInfiniteScrollSentinel } from "@/hooks/use-infinite-scroll-sentinel"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 import {
   ENCOMENDAS_PAGE_SIZE,
   type EncomendaCategoria,
@@ -18,13 +21,22 @@ export function EntreguesList({
   initialEntregues,
   categoria = "encomenda",
   canDelete = false,
+  geradoEm,
 }: {
   initialEntregues: EncomendaComDetalhes[]
   categoria?: EncomendaCategoria
   canDelete?: boolean
+  /** Instante (ms) em que o servidor leu initialEntregues (ver useDadosDoServidor). */
+  geradoEm?: number
 }) {
   const queryClient = useQueryClient()
   const queryKey = ["encomendas-entregues", categoria]
+  const initialData = useMemo(
+    () => ({ pages: [initialEntregues], pageParams: [0] }),
+    [initialEntregues]
+  )
+
+  useDadosDoServidor(queryKey, geradoEm === undefined ? undefined : initialData, geradoEm)
 
   const { data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
@@ -35,7 +47,12 @@ export function EntreguesList({
         lastPage.length < ENCOMENDAS_PAGE_SIZE
           ? undefined
           : allPages.reduce((total, page) => total + page.length, 0),
-      initialData: { pages: [initialEntregues], pageParams: [0] },
+      initialData,
+      initialDataUpdatedAt: geradoEm,
+      refetchOnMount: refetchAoMontar(geradoEm),
+      // O Realtime invalida a cada mudanca; ao sair da tela, a invalidacao
+      // corta a lista para a 1a pagina (ver invalidarListaInfinita).
+      staleTime: STALE_TIME_COM_REALTIME,
     })
 
   const sentinelRef = useInfiniteScrollSentinel({

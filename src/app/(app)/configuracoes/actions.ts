@@ -6,7 +6,7 @@ import { withTenantContext } from "@/lib/db"
 import { condominioRepository } from "@/repositories/condominio-repository"
 import { logRepository } from "@/repositories/log-repository"
 import { condominioSchema } from "@/schemas/condominio"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaimsEstrita } from "@/services/auth/session"
 import type { Condominio } from "@/types/domain"
 
 export type CondominioActionResult =
@@ -16,7 +16,7 @@ export type CondominioActionResult =
 export async function updateCondominioAction(
   input: unknown
 ): Promise<CondominioActionResult> {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     return { success: false, error: "Sessão expirada. Faça login novamente." }

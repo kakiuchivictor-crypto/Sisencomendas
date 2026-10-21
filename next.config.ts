@@ -38,6 +38,18 @@ const nextConfig: NextConfig = {
   // 127.0.0.1 (em vez de localhost) faz o login parecer travado: o POST da
   // action e rejeitado silenciosamente antes de chegar no codigo do app.
   ...(isDev ? { allowedDevOrigins: ["127.0.0.1", "localhost"] } : {}),
+  experimental: {
+    // Cache do router no navegador para paginas dinamicas: voltar a uma aba
+    // visitada ha menos de 30s reaproveita o payload ja recebido, sem nova ida
+    // ao servidor (padrao do Next 15+ e 0s). Os dados vivos das listas vem do
+    // TanStack Query (Realtime + invalidacao), nao deste payload. Qualquer
+    // revalidatePath/router.refresh limpa esse cache na hora. Efeito colateral
+    // aceito: mudanca de perfil/permissao pode levar ate 30s para refletir na
+    // UI de uma aba ja visitada (o servidor continua checando a cada acao).
+    staleTimes: {
+      dynamic: 30,
+    },
+  },
   async headers() {
     return [
       {

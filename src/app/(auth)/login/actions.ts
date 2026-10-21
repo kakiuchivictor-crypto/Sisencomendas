@@ -1,7 +1,5 @@
 "use server"
 
-import { redirect } from "next/navigation"
-
 import { loginSchema } from "@/schemas/auth"
 import { signInWithPassword } from "@/services/auth/auth-service"
 
@@ -9,6 +7,12 @@ export type LoginActionResult = {
   error?: string
 }
 
+/**
+ * Sem redirect no servidor: em caso de sucesso devolve {} e o formulario
+ * limpa o cache do TanStack e faz uma navegacao COMPLETA para "/" (ver
+ * login-form.tsx), para que nada do usuario anterior (sessao expirada no
+ * mesmo aparelho) sobreviva em memoria ao login de outro usuario.
+ */
 export async function loginAction(input: {
   email: string
   password: string
@@ -30,5 +34,5 @@ export async function loginAction(input: {
     return { error: "E-mail ou senha incorretos." }
   }
 
-  redirect("/")
+  return {}
 }

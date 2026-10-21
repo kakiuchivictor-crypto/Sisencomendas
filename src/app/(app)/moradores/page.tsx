@@ -1,10 +1,9 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { withTenantContext } from "@/lib/db"
 import { isAdminLike } from "@/lib/labels"
 import { moradorRepository } from "@/repositories/morador-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { withSession } from "@/services/auth/session"
 
 import { MoradoresList } from "./moradores-list"
 
@@ -13,17 +12,14 @@ export const metadata: Metadata = {
 }
 
 export default async function MoradoresPage() {
-  const claims = await getSessionClaims()
+  const session = await withSession((tx) => moradorRepository.list(tx))
 
-  if (!claims) {
+  if (!session) {
     redirect("/login")
   }
 
-  const moradores = await withTenantContext(claims, (tx) =>
-    moradorRepository.list(tx)
-  )
-
-  const canManage = isAdminLike(claims.app_role)
+  const moradores = session.dados
+  const canManage = isAdminLike(session.claims.app_role)
 
   return (
     <div className="space-y-6">

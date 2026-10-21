@@ -2,8 +2,6 @@
 
 import { randomUUID } from "node:crypto"
 
-import { revalidatePath } from "next/cache"
-
 import { withTenantContext } from "@/lib/db"
 import { encomendaRepository } from "@/repositories/encomenda-repository"
 import { logRepository } from "@/repositories/log-repository"
@@ -22,6 +20,15 @@ import {
 import { idParamSchema, remetenteNomeParamSchema } from "@/schemas/action-params"
 import { getSessionClaims } from "@/services/auth/session"
 import type { Encomenda, Remetente } from "@/types/domain"
+
+// Sem revalidatePath aqui (de proposito): ele fazia o servidor re-renderizar
+// layout + pagina a cada acao (dezenas de idas ao banco) so para entregar um
+// payload que o cliente nem usa. As telas de encomendas/correspondencia leem
+// os dados do TanStack Query, que ja e atualizado pela propria tela (update
+// otimista + invalidateQueries no onSuccess) e pelo Realtime (RealtimeSync)
+// em todos os dispositivos. Payloads antigos do cache do router (ate 30s, ver
+// staleTimes no next.config.ts) nao sobrescrevem o cache mais novo do TanStack
+// (ver hooks/use-dados-do-servidor.ts).
 
 export type CorrespondenciaActionResult =
   | { success: true; correspondencia: Encomenda }
@@ -74,8 +81,6 @@ export async function createCorrespondenciaAction(
 
     return criada
   })
-
-  revalidatePath("/correspondencia")
 
   return { success: true, correspondencia }
 }
@@ -136,8 +141,6 @@ export async function updateCorrespondenciaAction(
       error: "Correspondência não encontrada ou já foi entregue.",
     }
   }
-
-  revalidatePath("/correspondencia")
 
   return { success: true, correspondencia }
 }
@@ -208,8 +211,6 @@ export async function addItemToCorrespondenciaLoteAction(
     }
   }
 
-  revalidatePath("/correspondencia")
-
   return { success: true, correspondencia }
 }
 
@@ -256,8 +257,6 @@ export async function createRemetenteAction(
         nome: nomeTrimmed,
       })
     )
-
-    revalidatePath("/correspondencia")
 
     return { success: true, remetente }
   } catch {

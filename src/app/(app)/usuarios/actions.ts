@@ -8,7 +8,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin"
 import { logRepository } from "@/repositories/log-repository"
 import { usuarioRepository } from "@/repositories/usuario-repository"
 import { usuarioCreateSchema, usuarioUpdateSchema } from "@/schemas/usuario"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaimsEstrita } from "@/services/auth/session"
 import type { Usuario } from "@/types/domain"
 
 export type UsuarioActionResult =
@@ -16,7 +16,7 @@ export type UsuarioActionResult =
   | { success: false; error: string }
 
 export async function listUsuariosAction() {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   // Mesma regra da pagina /usuarios: so desenvolvedor lista usuarios. Sem
   // isso, um porteiro poderia chamar a action direto (o ID dela fica no
@@ -29,7 +29,7 @@ export async function listUsuariosAction() {
 export async function createUsuarioAction(
   input: unknown
 ): Promise<UsuarioActionResult> {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     return { success: false, error: "Sessão expirada. Faça login novamente." }
@@ -101,7 +101,7 @@ export async function updateUsuarioAction(
   id: string,
   input: unknown
 ): Promise<UsuarioActionResult> {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     return { success: false, error: "Sessão expirada. Faça login novamente." }
@@ -146,7 +146,7 @@ export async function updateUsuarioAction(
 export type DeleteUsuarioActionResult = { success: true } | { success: false; error: string }
 
 export async function deleteUsuarioAction(id: string): Promise<DeleteUsuarioActionResult> {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     return { success: false, error: "Sessão expirada. Faça login novamente." }

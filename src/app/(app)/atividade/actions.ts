@@ -2,7 +2,7 @@
 
 import { withTenantContext } from "@/lib/db"
 import { logRepository } from "@/repositories/log-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaimsEstrita } from "@/services/auth/session"
 import type { LogAtividade } from "@/types/domain"
 
 export type LogFiltersInput = {
@@ -14,7 +14,7 @@ export type LogFiltersInput = {
 export async function listAtividadeAction(
   filters: LogFiltersInput
 ): Promise<LogAtividade[]> {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims || claims.app_role !== "desenvolvedor") {
     return []

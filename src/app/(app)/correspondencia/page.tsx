@@ -1,10 +1,12 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { withTenantContext } from "@/lib/db"
 import { isAdminLike } from "@/lib/labels"
-import { encomendaRepository } from "@/repositories/encomenda-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import {
+  ENCOMENDAS_PAGE_SIZE,
+  encomendaRepository,
+} from "@/repositories/encomenda-repository"
+import { withSession } from "@/services/auth/session"
 
 import { EntreguesList } from "../entregues/entregues-list"
 import { PendentesList } from "../_encomendas/pendentes-list"
@@ -15,20 +17,22 @@ export const metadata: Metadata = {
 }
 
 export default async function CorrespondenciaPage() {
-  const claims = await getSessionClaims()
-
-  if (!claims) {
-    redirect("/login")
-  }
-
-  const { pendentes, entregues } = await withTenantContext(claims, async (tx) => {
+  const session = await withSession(async (tx) => {
     const [pendentes, entregues] = await Promise.all([
       encomendaRepository.listPendentes(tx, "correspondencia"),
-      encomendaRepository.listEntregues(tx, 50, "correspondencia"),
+      encomendaRepository.listEntregues(tx, ENCOMENDAS_PAGE_SIZE, "correspondencia"),
     ])
 
     return { pendentes, entregues }
   })
+
+  if (!session) {
+    redirect("/login")
+  }
+
+  const { geradoEm } = session
+  const { pendentes, entregues } = session.dados
+  const podeGerenciar = isAdminLike(session.claims.app_role)
 
   return (
     <div className="space-y-8">
@@ -46,9 +50,10 @@ export default async function CorrespondenciaPage() {
         <h2 className="text-lg font-medium">Pendentes</h2>
         <PendentesList
           initialPendentes={pendentes}
+          geradoEm={geradoEm}
           categoria="correspondencia"
           allowEdit
-          canManagePortaria={isAdminLike(claims.app_role)}
+          canManagePortaria={podeGerenciar}
         />
       </div>
 
@@ -56,8 +61,9 @@ export default async function CorrespondenciaPage() {
         <h2 className="text-lg font-medium">Entregues</h2>
         <EntreguesList
           initialEntregues={entregues}
+          geradoEm={geradoEm}
           categoria="correspondencia"
-          canDelete={isAdminLike(claims.app_role)}
+          canDelete={podeGerenciar}
         />
       </div>
     </div>

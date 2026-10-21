@@ -13,7 +13,7 @@ import {
   Search,
   type LucideIcon,
 } from "lucide-react"
-import { useState, useTransition } from "react"
+import { useDeferredValue, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
@@ -40,10 +40,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { refetchAoMontar, useDadosDoServidor } from "@/hooks/use-dados-do-servidor"
 import { pendenteCasaBusca, termosDaBusca } from "@/lib/busca-pendentes"
 import { diasDesde, formatDate, formatDurationSince, formatTime } from "@/lib/format"
 import { TIPO_ENCOMENDA_LABELS, transportadoraLabel } from "@/lib/labels"
 import { offlineAwareErrorMessage } from "@/lib/network"
+import { STALE_TIME_COM_REALTIME, invalidarListaInfinita } from "@/lib/query-invalidation"
 import { cn } from "@/lib/utils"
 import type { EncomendaCategoria } from "@/repositories/encomenda-repository"
 import type { EncomendaComDetalhes } from "@/types/domain"
@@ -143,6 +145,7 @@ export function PendentesList({
   filtro = "todas",
   onFiltroChange,
   canManagePortaria = false,
+  geradoEm,
 }: {
   initialPendentes: EncomendaComDetalhes[]
   categoria?: EncomendaCategoria
@@ -160,6 +163,8 @@ export function PendentesList({
   onFiltroChange?: (filtro: PendentesFiltro) => void
   /** So administracao/desenvolvedor podem ativar/desativar o sinalizador de portaria. */
   canManagePortaria?: boolean
+  /** Instante (ms) em que o servidor leu initialPendentes (ver useDadosDoServidor). */
+  geradoEm?: number
 }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<EncomendaComDetalhes | null>(null)
@@ -181,13 +186,20 @@ export function PendentesList({
   const [buscaInterna, setBuscaInterna] = useState("")
   const isControlled = buscaControlada !== undefined && onBuscaChange !== undefined
   const busca = isControlled ? buscaControlada : buscaInterna
+  const buscaAdiada = useDeferredValue(busca)
   const setBusca = isControlled ? onBuscaChange : setBuscaInterna
   const queryKey = ["encomendas-pendentes", categoria]
+
+  useDadosDoServidor(queryKey, initialPendentes, geradoEm)
 
   const { data: pendentes } = useQuery({
     queryKey,
     queryFn: () => listPendentesAction(categoria),
     initialData: initialPendentes,
+    initialDataUpdatedAt: geradoEm,
+    refetchOnMount: refetchAoMontar(geradoEm),
+    // O Realtime invalida a cada mudanca: trocar de aba nao precisa rebuscar.
+    staleTime: STALE_TIME_COM_REALTIME,
     // Rede de seguranca para o destaque de atraso (>7 dias), que muda
     // sozinho com o tempo — o Realtime so avisa de escritas no banco.
     refetchInterval: 5 * 60 * 1000,
@@ -233,12 +245,10 @@ export function PendentesList({
       setRetiradoPor("")
       void queryClient.invalidateQueries({ queryKey: ["cards-stats", categoria] })
       void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
-      void queryClient.invalidateQueries({
-        queryKey: ["encomendas-entregues", categoria],
-      })
+      void invalidarListaInfinita(queryClient, ["encomendas-entregues", categoria])
       // "encomendas-historico" nao tem categoria na chave (busca so encomendas
       // normais) — invalidar sem o segundo elemento pega qualquer termo de busca.
-      void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+      void invalidarListaInfinita(queryClient, ["encomendas-historico"])
     },
   })
 
@@ -274,7 +284,9 @@ export function PendentesList({
   const list = pendentes ?? []
 
   // Nome do morador, rua e número; sem diferenciar maiúsculas nem acentos.
-  const termosBusca = termosDaBusca(busca)
+  // A filtragem usa o valor "adiado": o campo de busca atualiza a cada tecla
+  // sem esperar a lista (que pode ter centenas de lotes) ser refiltrada.
+  const termosBusca = termosDaBusca(buscaAdiada)
   const listaBuscada = list.filter((encomenda) =>
     pendenteCasaBusca(encomenda, termosBusca)
   )
@@ -318,8 +330,8 @@ export function PendentesList({
           return true
         })
 
-  const emptyMessage = busca
-    ? `Nenhum morador ou rua encontrado para "${busca}".`
+  const emptyMessage = buscaAdiada
+    ? `Nenhum morador ou rua encontrado para "${buscaAdiada}".`
     : filtro === "atrasadas"
       ? "Nenhuma encomenda atrasada no momento."
       : filtro === "portaria"
@@ -673,7 +685,7 @@ export function PendentesList({
           correspondencia={editing ?? undefined}
           onSuccess={() => {
             void queryClient.invalidateQueries({ queryKey })
-            void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+            void invalidarListaInfinita(queryClient, ["encomendas-historico"])
           }}
         />
       )}
@@ -686,7 +698,7 @@ export function PendentesList({
           encomenda={editing ?? undefined}
           onSuccess={() => {
             void queryClient.invalidateQueries({ queryKey })
-            void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+            void invalidarListaInfinita(queryClient, ["encomendas-historico"])
           }}
         />
       )}
@@ -700,7 +712,7 @@ export function PendentesList({
           void queryClient.invalidateQueries({ queryKey })
           void queryClient.invalidateQueries({ queryKey: ["cards-stats", categoria] })
           void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
-          void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+          void invalidarListaInfinita(queryClient, ["encomendas-historico"])
         }}
       />
 

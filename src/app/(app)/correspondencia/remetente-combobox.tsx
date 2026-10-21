@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { offlineAwareErrorMessage } from "@/lib/network"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 import { cn } from "@/lib/utils"
 import type { Remetente } from "@/types/domain"
 
@@ -45,6 +46,8 @@ export function RemetenteCombobox({
     // server actions nao conseguem serializar — a chamada falharia em silencio.
     queryFn: () => listRemetentesAction(),
     enabled: open,
+    // Catalogo muda pouco; o proprio cadastro invalida a chave.
+    staleTime: STALE_TIME_COM_REALTIME,
   })
 
   const list = [...(remetentes ?? [])].sort((a, b) => COLLATOR_NOME.compare(a.nome, b.nome))

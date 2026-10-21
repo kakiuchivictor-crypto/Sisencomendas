@@ -19,6 +19,7 @@ import {
   TRANSPORTADORA_FIXA_OPTIONS,
 } from "@/lib/labels"
 import { offlineAwareErrorMessage } from "@/lib/network"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 import {
   type CamposTransportadora,
   type SelecaoTransportadora,
@@ -79,6 +80,8 @@ export function TransportadoraCombobox({
     // server actions nao conseguem serializar — a chamada falharia em silencio.
     queryFn: () => listTransportadorasAction(),
     enabled: open,
+    // Catalogo muda pouco; o proprio cadastro invalida a chave.
+    staleTime: STALE_TIME_COM_REALTIME,
   })
 
   const chaveTermo = chaveTransportadora(search)

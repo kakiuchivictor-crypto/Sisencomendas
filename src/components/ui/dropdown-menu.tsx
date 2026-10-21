@@ -96,6 +96,29 @@ function DropdownMenuItem({
   )
 }
 
+/**
+ * Item de menu que e um link de verdade (<a>), com o mesmo visual de
+ * DropdownMenuItem. Use com `render={<Link href="..." />}` do next/link para
+ * ganhar prefetch e navegacao do App Router (em vez de onClick + router.push).
+ */
+function DropdownMenuLinkItem({
+  className,
+  closeOnClick = true,
+  ...props
+}: MenuPrimitive.LinkItem.Props) {
+  return (
+    <MenuPrimitive.LinkItem
+      data-slot="dropdown-menu-item"
+      closeOnClick={closeOnClick}
+      className={cn(
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm pointer-coarse:py-3 outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 function DropdownMenuSub({ ...props }: MenuPrimitive.SubmenuRoot.Props) {
   return <MenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />
 }
@@ -257,6 +280,7 @@ export {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,

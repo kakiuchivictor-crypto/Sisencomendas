@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 
 import { withTenantContext } from "@/lib/db"
 import { usuarioRepository } from "@/repositories/usuario-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaimsEstrita } from "@/services/auth/session"
 
 import { UsuariosList } from "./usuarios-list"
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function UsuariosPage() {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     redirect("/login")

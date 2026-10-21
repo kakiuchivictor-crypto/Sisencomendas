@@ -1,27 +1,27 @@
 "use client"
 
 import { Settings } from "lucide-react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 import { buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
 /**
  * Engrenagem do header: so itens de administracao do sistema (Atividade,
  * Usuarios, Configuracoes). Relatorios virou aba da nav principal.
+ * Os itens sao <Link> de verdade: ao abrir o menu, o Next ja pre-carrega o
+ * esqueleto (loading.tsx) de cada destino, e o toque troca de tela na hora.
  */
 export function AdminMenu({
   items,
 }: {
   items: { href: string; label: string }[]
 }) {
-  const router = useRouter()
-
   if (items.length === 0) {
     return null
   }
@@ -36,9 +36,9 @@ export function AdminMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {items.map((item) => (
-          <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)}>
+          <DropdownMenuLinkItem key={item.href} render={<Link href={item.href} />}>
             {item.label}
-          </DropdownMenuItem>
+          </DropdownMenuLinkItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

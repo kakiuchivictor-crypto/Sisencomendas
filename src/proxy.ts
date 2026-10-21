@@ -52,48 +52,85 @@ export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64")
   const cspHeader = buildCsp(nonce)
 
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("x-nonce", nonce)
-  requestHeaders.set("Content-Security-Policy", cspHeader)
+  // Resposta "seguinte" (deixa a requisicao seguir para a pagina). Criada
+  // por funcao porque o client Supabase a RECRIA quando renova a sessao:
+  // new Headers(request.headers) e lido na hora, entao ja inclui o cabecalho
+  // "cookie" com o token novo (ver lib/supabase/middleware.ts), e o nonce e
+  // o CSP sao reaplicados em toda versao da response.
+  function criarRespostaSeguinte() {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set("x-nonce", nonce)
+    requestHeaders.set("Content-Security-Policy", cspHeader)
 
-  // Resposta "base": e nela que o client Supabase escreve os cookies
-  // sb-* renovados. Precisa existir antes de decidir se vai redirecionar,
-  // porque mesmo numa resposta de redirect os cookies renovados tem que
-  // ser carregados adiante (senao a sessao nao avanca).
-  const response = NextResponse.next({ request: { headers: requestHeaders } })
-  response.headers.set("Content-Security-Policy", cspHeader)
+    const resposta = NextResponse.next({ request: { headers: requestHeaders } })
+    resposta.headers.set("Content-Security-Policy", cspHeader)
+    return resposta
+  }
 
-  const supabase = createSupabaseMiddlewareClient(request, response)
+  const { supabase, getResponse } = createSupabaseMiddlewareClient(
+    request,
+    criarRespostaSeguinte
+  )
 
-  // getUser() (nao getSession()) valida a sessao contra o servidor do
-  // Supabase Auth a cada requisicao — e o unico jeito seguro de confiar
-  // nessa checagem aqui no middleware.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAuthenticated = user !== null
+  // getClaims() (nao getSession()) renova a sessao se o access token tiver
+  // expirado (gravando os cookies sb-* novos na response, como o getUser()
+  // fazia) e VERIFICA a assinatura do JWT localmente com a chave publica do
+  // projeto (JWKS, em cache por 10 min): sem ida ao GoTrue a cada requisicao.
+  // getSession() sozinho nao verifica a assinatura e nao pode ser usado aqui.
+  // Trade-off: sessao revogada/usuario banido no GoTrue so perde efeito aqui
+  // quando o access token expira (1h); perfil e exclusao em "usuarios" valem
+  // na hora (ver services/auth/session.ts). Se o projeto assinar com chave
+  // simetrica (HS256), getClaims() cai em getUser() sozinho.
+  //
+  // getClaims() pode LANCAR excecao com um JWT malformado ou forjado (ex.:
+  // alg "none", ou RS256 com o kid de uma chave real e assinatura invalida),
+  // o que virava erro 500. Qualquer excecao conta como "nao autenticado" e
+  // segue o fluxo normal (redirect para /login). O token nunca e logado.
+  let isAuthenticated: boolean
+  try {
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims()
+    isAuthenticated = !claimsError && typeof claimsData?.claims?.sub === "string"
+  } catch {
+    isAuthenticated = false
+  }
+
+  // Lida DEPOIS do getClaims(): se a sessao foi renovada, e a versao recriada.
+  const response = getResponse()
 
   if (!isAuthenticated && !isPublicPath) {
-    const redirectResponse = NextResponse.redirect(new URL("/login", request.url))
-    redirectResponse.headers.set("Content-Security-Policy", cspHeader)
-    copyCookies(response, redirectResponse)
-    return redirectResponse
+    return redirecionar(new URL("/login", request.url), response, cspHeader)
   }
 
   if (isAuthenticated && isPublicPath) {
-    const redirectResponse = NextResponse.redirect(new URL("/", request.url))
-    redirectResponse.headers.set("Content-Security-Policy", cspHeader)
-    copyCookies(response, redirectResponse)
-    return redirectResponse
+    return redirecionar(new URL("/", request.url), response, cspHeader)
   }
 
   return response
 }
 
-function copyCookies(from: NextResponse, to: NextResponse) {
-  for (const cookie of from.cookies.getAll()) {
-    to.cookies.set(cookie)
+// Cabecalhos anti-cache que o @supabase/ssr coloca junto com os cookies de
+// sessao (resposta com cookie de sessao nao pode ser guardada por CDN).
+const CABECALHOS_ANTI_CACHE = ["Cache-Control", "Expires", "Pragma"]
+
+/**
+ * Redirect que leva adiante os cookies sb-* renovados (senao a sessao nao
+ * avanca) e os cabecalhos anti-cache que vieram com eles.
+ */
+function redirecionar(destino: URL, de: NextResponse, cspHeader: string) {
+  const redirectResponse = NextResponse.redirect(destino)
+  redirectResponse.headers.set("Content-Security-Policy", cspHeader)
+
+  for (const cookie of de.cookies.getAll()) {
+    redirectResponse.cookies.set(cookie)
   }
+  for (const nome of CABECALHOS_ANTI_CACHE) {
+    const valor = de.headers.get(nome)
+    if (valor !== null) {
+      redirectResponse.headers.set(nome, valor)
+    }
+  }
+
+  return redirectResponse
 }
 
 // Cada exclusao e ancorada com (?:$|/): o item precisa ser o segmento

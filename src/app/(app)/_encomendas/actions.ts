@@ -2,8 +2,6 @@
 
 import { randomUUID } from "node:crypto"
 
-import { revalidatePath } from "next/cache"
-
 import { withTenantContext } from "@/lib/db"
 import {
   encomendaAddItemSchema,
@@ -45,12 +43,21 @@ import {
   transportadoraNomeBrutoParamSchema,
   transportadoraNomeParamSchema,
 } from "@/schemas/action-params"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaims, withSession } from "@/services/auth/session"
 import type {
   Encomenda,
   EncomendaComDetalhes,
   TransportadoraCadastrada,
 } from "@/types/domain"
+
+// Sem revalidatePath aqui (de proposito): ele fazia o servidor re-renderizar
+// layout + pagina a cada acao (dezenas de idas ao banco) so para entregar um
+// payload que o cliente nem usa. As telas de encomendas/correspondencia leem
+// os dados do TanStack Query, que ja e atualizado pela propria tela (update
+// otimista + invalidateQueries no onSuccess) e pelo Realtime (RealtimeSync)
+// em todos os dispositivos. Payloads antigos do cache do router (ate 30s, ver
+// staleTimes no next.config.ts) nao sobrescrevem o cache mais novo do TanStack
+// (ver hooks/use-dados-do-servidor.ts).
 
 export type EncomendaActionResult =
   | { success: true; encomendas: Encomenda[] }
@@ -118,9 +125,6 @@ export async function createEncomendaAction(
     return criadas
   })
 
-  revalidatePath("/")
-  revalidatePath("/historico")
-
   return { success: true, encomendas: encomendasCriadas }
 }
 
@@ -181,9 +185,6 @@ export async function updateEncomendaAction(
       error: "Encomenda não encontrada ou já foi entregue.",
     }
   }
-
-  revalidatePath("/")
-  revalidatePath("/historico")
 
   return { success: true, encomendas: [encomenda] }
 }
@@ -263,10 +264,6 @@ export async function addItemToEncomendaLoteAction(
     }
   }
 
-  revalidatePath("/")
-  revalidatePath("/historico")
-  revalidatePath("/correspondencia")
-
   return { success: true, encomendas: [encomenda] }
 }
 
@@ -320,11 +317,6 @@ export async function entregarAction(
   if (entregues.length === 0) {
     return { success: false, error: "Encomenda já foi entregue ou não existe." }
   }
-
-  revalidatePath("/")
-  revalidatePath("/entregues")
-  revalidatePath("/historico")
-  revalidatePath("/correspondencia")
 
   return { success: true }
 }
@@ -382,11 +374,6 @@ export async function entregarItemAction(
     return { success: false, error: "Item já foi entregue ou não existe." }
   }
 
-  revalidatePath("/")
-  revalidatePath("/entregues")
-  revalidatePath("/historico")
-  revalidatePath("/correspondencia")
-
   return { success: true }
 }
 
@@ -428,11 +415,6 @@ export async function voltarParaPendenteAction(
   if (revertidas.length === 0) {
     return { success: false, error: "Encomenda já está pendente ou não existe." }
   }
-
-  revalidatePath("/")
-  revalidatePath("/entregues")
-  revalidatePath("/historico")
-  revalidatePath("/correspondencia")
 
   return { success: true }
 }
@@ -493,9 +475,6 @@ export async function toggleDeixadoPortariaAction(
     return { success: false, error: "Lote não encontrado ou já foi entregue." }
   }
 
-  revalidatePath("/")
-  revalidatePath("/correspondencia")
-
   return { success: true }
 }
 
@@ -546,35 +525,26 @@ export async function excluirEncomendaAction(id: string): Promise<ExcluirEncomen
     }
   }
 
-  revalidatePath("/entregues")
-  revalidatePath("/historico")
-  revalidatePath("/correspondencia")
-
   return { success: true }
 }
+
+// Leituras abaixo: a sessao e os dados vao na MESMA transacao (withSession),
+// e os parametros sao validados antes de qualquer ida ao banco.
 
 export async function listPendentesAction(
   categoria: EncomendaCategoria = "encomenda"
 ): Promise<EncomendaComDetalhes[]> {
-  const claims = await getSessionClaims()
-
-  if (!claims) return []
-
   if (!encomendaCategoriaParamSchema.safeParse(categoria).success) return []
 
-  return withTenantContext(claims, (tx) =>
-    encomendaRepository.listPendentes(tx, categoria)
-  )
+  const session = await withSession((tx) => encomendaRepository.listPendentes(tx, categoria))
+
+  return session?.dados ?? []
 }
 
 export async function listEntreguesAction(
   categoria: EncomendaCategoria = "encomenda",
   offset = 0
 ): Promise<EncomendaComDetalhes[]> {
-  const claims = await getSessionClaims()
-
-  if (!claims) return []
-
   if (
     !encomendaCategoriaParamSchema.safeParse(categoria).success ||
     !offsetParamSchema.safeParse(offset).success
@@ -582,9 +552,11 @@ export async function listEntreguesAction(
     return []
   }
 
-  return withTenantContext(claims, (tx) =>
+  const session = await withSession((tx) =>
     encomendaRepository.listEntregues(tx, ENCOMENDAS_PAGE_SIZE, categoria, offset)
   )
+
+  return session?.dados ?? []
 }
 
 export async function searchEncomendasAction(
@@ -593,10 +565,6 @@ export async function searchEncomendasAction(
   offset = 0,
   desde?: Date
 ): Promise<EncomendaComDetalhes[]> {
-  const claims = await getSessionClaims()
-
-  if (!claims) return []
-
   if (
     !searchTermParamSchema.safeParse(term).success ||
     !encomendaCategoriaParamSchema.safeParse(categoria).success ||
@@ -606,9 +574,11 @@ export async function searchEncomendasAction(
     return []
   }
 
-  return withTenantContext(claims, (tx) =>
+  const session = await withSession((tx) =>
     encomendaRepository.search(tx, term, ENCOMENDAS_PAGE_SIZE, categoria, offset, desde)
   )
+
+  return session?.dados ?? []
 }
 
 export type CardsStats = {
@@ -618,30 +588,23 @@ export type CardsStats = {
   pendentesAntigas: number
 }
 
+const CARDS_STATS_VAZIO: CardsStats = {
+  pendentes: 0,
+  recebidasHoje: 0,
+  entreguesHoje: 0,
+  pendentesAntigas: 0,
+}
+
 export async function getCardsStatsAction(
   categoria: EncomendaCategoria = "encomenda"
 ): Promise<CardsStats> {
-  const claims = await getSessionClaims()
-
-  if (!claims) {
-    return { pendentes: 0, recebidasHoje: 0, entreguesHoje: 0, pendentesAntigas: 0 }
-  }
-
   if (!encomendaCategoriaParamSchema.safeParse(categoria).success) {
-    return { pendentes: 0, recebidasHoje: 0, entreguesHoje: 0, pendentesAntigas: 0 }
+    return CARDS_STATS_VAZIO
   }
 
-  return withTenantContext(claims, async (tx) => {
-    const [pendentes, recebidasHoje, entreguesHoje, pendentesAntigas] =
-      await Promise.all([
-        encomendaRepository.countPendentes(tx, categoria),
-        encomendaRepository.countRecebidasHoje(tx, categoria),
-        encomendaRepository.countEntreguesHoje(tx, categoria),
-        encomendaRepository.countPendentesAntigas(tx, categoria),
-      ])
+  const session = await withSession((tx) => encomendaRepository.cardsStats(tx, categoria))
 
-    return { pendentes, recebidasHoje, entreguesHoje, pendentesAntigas }
-  })
+  return session?.dados ?? CARDS_STATS_VAZIO
 }
 
 /** Catálogo de transportadoras personalizadas do condomínio (qualquer papel). */

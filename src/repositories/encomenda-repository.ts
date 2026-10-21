@@ -1,7 +1,6 @@
 import {
   and,
   asc,
-  count,
   desc,
   eq,
   gte,
@@ -62,10 +61,23 @@ export type UpdateEncomendaInput = {
  */
 export type EncomendaCategoria = "encomenda" | "correspondencia"
 
+/*
+ * Condicoes fixas escritas como LITERAIS SQL (e nao eq(coluna, "valor"), que
+ * vira parametro $1). Com prepare:false, o postgres.js faz uma ida extra ao
+ * banco para cada consulta com parametro e trava o pipeline da conexao ate a
+ * resposta; sem parametros, as consultas da mesma transacao seguem juntas
+ * num pacote so. SO valem para constantes do codigo: nada que venha do
+ * usuario entra aqui (entrada externa continua sempre parametrizada).
+ */
+const STATUS_PENDENTE = sql`${encomendas.status} = 'pendente'`
+const STATUS_ENTREGUE = sql`${encomendas.status} = 'entregue'`
+const TIPO_CARTA = sql`${encomendas.tipo} = 'carta'`
+const TIPO_NAO_CARTA = sql`${encomendas.tipo} <> 'carta'`
+const RECEBIDA_HA_MAIS_DE_7_DIAS = sql`${encomendas.recebidaEm} < now() - interval '7 days'`
+
+/** Escolhe entre dois fragmentos constantes; o valor de `categoria` nunca e interpolado. */
 function categoriaCondition(categoria: EncomendaCategoria): SQL {
-  return categoria === "correspondencia"
-    ? eq(encomendas.tipo, "carta")
-    : ne(encomendas.tipo, "carta")
+  return categoria === "correspondencia" ? TIPO_CARTA : TIPO_NAO_CARTA
 }
 
 /**
@@ -118,6 +130,11 @@ function buildReportConditions(filters: ReportFilters): SQL[] {
   }
 
   return conditions
+}
+
+/** count(*) filter (where ...) ja convertido para number (o Postgres devolve bigint como texto). */
+function countFilter(condicao: SQL) {
+  return sql<number>`count(*) filter (where ${condicao})`.mapWith(Number)
 }
 
 const recebidaPorUsuario = alias(usuarios, "recebida_por_usuario")
@@ -318,7 +335,7 @@ export const encomendaRepository = {
 
   async listPendentes(tx: Transaction, categoria: EncomendaCategoria = "encomenda") {
     return detalhesQuery(tx)
-      .where(and(eq(encomendas.status, "pendente"), categoriaCondition(categoria)))
+      .where(and(STATUS_PENDENTE, categoriaCondition(categoria)))
       .orderBy(asc(encomendas.recebidaEm))
   },
 
@@ -329,7 +346,7 @@ export const encomendaRepository = {
     offset = 0
   ) {
     return detalhesQuery(tx)
-      .where(and(eq(encomendas.status, "entregue"), categoriaCondition(categoria)))
+      .where(and(STATUS_ENTREGUE, categoriaCondition(categoria)))
       .orderBy(desc(encomendas.entregueEm))
       .limit(limit)
       .offset(offset)
@@ -382,66 +399,50 @@ export const encomendaRepository = {
       .offset(offset)
   },
 
-  async countPendentes(tx: Transaction, categoria: EncomendaCategoria = "encomenda") {
-    const [row] = await tx
-      .select({ value: count() })
-      .from(encomendas)
-      .where(and(eq(encomendas.status, "pendente"), categoriaCondition(categoria)))
+  /**
+   * Indicadores da tela de Pendentes (4 cards) de uma categoria, numa unica
+   * consulta com count(*) filter (antes eram 4 COUNTs, cada um com 2 idas ao
+   * banco por causa dos parametros). Sem parametros: so literais constantes.
+   */
+  async cardsStats(tx: Transaction, categoria: EncomendaCategoria = "encomenda") {
+    const doTipo = categoriaCondition(categoria)
 
-    return row?.value ?? 0
+    const [row] = await tx
+      .select({
+        pendentes: countFilter(sql`${STATUS_PENDENTE} and ${doTipo}`),
+        recebidasHoje: countFilter(
+          sql`${doTipo} and ${encomendas.recebidaEm} >= ${inicioDoDiaBrasilia}`
+        ),
+        entreguesHoje: countFilter(
+          sql`${STATUS_ENTREGUE} and ${doTipo} and ${encomendas.entregueEm} >= ${inicioDoDiaBrasilia}`
+        ),
+        pendentesAntigas: countFilter(
+          sql`${STATUS_PENDENTE} and ${doTipo} and ${RECEBIDA_HA_MAIS_DE_7_DIAS}`
+        ),
+      })
+      .from(encomendas)
+
+    return {
+      pendentes: row?.pendentes ?? 0,
+      recebidasHoje: row?.recebidasHoje ?? 0,
+      entreguesHoje: row?.entreguesHoje ?? 0,
+      pendentesAntigas: row?.pendentesAntigas ?? 0,
+    }
   },
 
-  async countRecebidasHoje(
-    tx: Transaction,
-    categoria: EncomendaCategoria = "encomenda"
-  ) {
+  /** Contadores das abas (encomendas e correspondencias pendentes), numa consulta. */
+  async navCounts(tx: Transaction) {
     const [row] = await tx
-      .select({ value: count() })
+      .select({
+        encomendas: countFilter(sql`${STATUS_PENDENTE} and ${TIPO_NAO_CARTA}`),
+        correspondencias: countFilter(sql`${STATUS_PENDENTE} and ${TIPO_CARTA}`),
+      })
       .from(encomendas)
-      .where(
-        and(
-          gte(encomendas.recebidaEm, inicioDoDiaBrasilia),
-          categoriaCondition(categoria)
-        )
-      )
 
-    return row?.value ?? 0
-  },
-
-  async countEntreguesHoje(
-    tx: Transaction,
-    categoria: EncomendaCategoria = "encomenda"
-  ) {
-    const [row] = await tx
-      .select({ value: count() })
-      .from(encomendas)
-      .where(
-        and(
-          eq(encomendas.status, "entregue"),
-          gte(encomendas.entregueEm, inicioDoDiaBrasilia),
-          categoriaCondition(categoria)
-        )
-      )
-
-    return row?.value ?? 0
-  },
-
-  async countPendentesAntigas(
-    tx: Transaction,
-    categoria: EncomendaCategoria = "encomenda"
-  ) {
-    const [row] = await tx
-      .select({ value: count() })
-      .from(encomendas)
-      .where(
-        and(
-          eq(encomendas.status, "pendente"),
-          lt(encomendas.recebidaEm, sql`now() - interval '7 days'`),
-          categoriaCondition(categoria)
-        )
-      )
-
-    return row?.value ?? 0
+    return {
+      encomendas: row?.encomendas ?? 0,
+      correspondencias: row?.correspondencias ?? 0,
+    }
   },
 
   async report(tx: Transaction, filters: ReportFilters, limit = 2000) {

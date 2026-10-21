@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, CheckCircle2, Filter, Inbox, Package, X } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
+import { refetchAoMontar, useDadosDoServidor } from "@/hooks/use-dados-do-servidor"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 import type { EncomendaCategoria } from "@/repositories/encomenda-repository"
 import { cn } from "@/lib/utils"
 
@@ -19,17 +21,26 @@ export function StatCards({
   categoria = "encomenda",
   onAtrasadasClick,
   atrasadasActive = false,
+  geradoEm,
 }: {
   initialStats: CardsStats
   categoria?: EncomendaCategoria
   /** Quando informado, o indicador "Mais de 7 dias" vira um filtro clicavel. */
   onAtrasadasClick?: () => void
   atrasadasActive?: boolean
+  /** Instante (ms) em que o servidor leu initialStats (ver useDadosDoServidor). */
+  geradoEm?: number
 }) {
+  const queryKey = ["cards-stats", categoria]
+  useDadosDoServidor(queryKey, initialStats, geradoEm)
+
   const { data } = useQuery({
-    queryKey: ["cards-stats", categoria],
+    queryKey,
     queryFn: () => getCardsStatsAction(categoria),
     initialData: initialStats,
+    initialDataUpdatedAt: geradoEm,
+    refetchOnMount: refetchAoMontar(geradoEm),
+    staleTime: STALE_TIME_COM_REALTIME,
     // O Realtime (RealtimeSync) ja invalida essa query a cada mudanca no
     // banco — esse polling e so uma rede de seguranca para o contador de
     // "mais de 7 dias", que muda sozinho com o passar do tempo, sem

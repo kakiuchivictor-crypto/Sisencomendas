@@ -1,6 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQueryClient } from "@tanstack/react-query"
 import { ArrowBigUp, ArrowRight, CircleAlert, Eye, EyeOff } from "lucide-react"
 import { useEffect, useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
@@ -34,6 +35,7 @@ const labelClassName = "text-foreground text-sm font-semibold data-[error=true]:
 const messageClassName = "text-danger-ink text-sm font-medium"
 
 export function LoginForm() {
+  const queryClient = useQueryClient()
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -60,7 +62,14 @@ export function LoginForm() {
       if (result?.error) {
         setServerError(result.error)
         form.setFocus("password", { shouldSelect: true })
+        return
       }
+
+      // Pode haver outro usuario antes neste aparelho (sessao expirada sem
+      // "Sair"): o QueryClient vive no layout raiz e sobreviveria a uma
+      // navegacao do Next. Limpa o cache e faz carga completa da pagina.
+      queryClient.clear()
+      window.location.assign(new URL("/", window.location.origin))
     })
   }
 

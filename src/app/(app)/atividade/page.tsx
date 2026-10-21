@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 
 import { withTenantContext } from "@/lib/db"
 import { logRepository } from "@/repositories/log-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { getSessionClaimsEstrita } from "@/services/auth/session"
 
 import { AtividadeView } from "./atividade-view"
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function AtividadePage() {
-  const claims = await getSessionClaims()
+  const claims = await getSessionClaimsEstrita()
 
   if (!claims) {
     redirect("/login")

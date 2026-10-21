@@ -1,10 +1,9 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { withTenantContext } from "@/lib/db"
 import { isAdminLike } from "@/lib/labels"
 import { encomendaRepository } from "@/repositories/encomenda-repository"
-import { getSessionClaims } from "@/services/auth/session"
+import { withSession } from "@/services/auth/session"
 
 import { EntreguesList } from "./entregues-list"
 
@@ -13,15 +12,13 @@ export const metadata: Metadata = {
 }
 
 export default async function EntreguesPage() {
-  const claims = await getSessionClaims()
+  const session = await withSession((tx) => encomendaRepository.listEntregues(tx))
 
-  if (!claims) {
+  if (!session) {
     redirect("/login")
   }
 
-  const entregues = await withTenantContext(claims, (tx) =>
-    encomendaRepository.listEntregues(tx)
-  )
+  const { dados: entregues, geradoEm } = session
 
   return (
     <div className="space-y-6">
@@ -33,7 +30,8 @@ export default async function EntreguesPage() {
       </div>
       <EntreguesList
         initialEntregues={entregues}
-        canDelete={isAdminLike(claims.app_role)}
+        geradoEm={geradoEm}
+        canDelete={isAdminLike(session.claims.app_role)}
       />
     </div>
   )

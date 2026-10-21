@@ -19,10 +19,13 @@ export function PendentesHeader({
   initialPendentes,
   initialStats,
   canManagePortaria = false,
+  geradoEm,
 }: {
   initialPendentes: EncomendaComDetalhes[]
   initialStats: CardsStats
   canManagePortaria?: boolean
+  /** Instante (ms) em que o servidor leu os dados (ver useDadosDoServidor). */
+  geradoEm?: number
 }) {
   const [busca, setBusca] = useState("")
   const [filtro, setFiltro] = useState<PendentesFiltro>("todas")
@@ -48,6 +51,7 @@ export function PendentesHeader({
 
       <StatCards
         initialStats={initialStats}
+        geradoEm={geradoEm}
         onAtrasadasClick={() =>
           setFiltro((current) => (current === "atrasadas" ? "todas" : "atrasadas"))
         }
@@ -61,6 +65,7 @@ export function PendentesHeader({
         filtro={filtro}
         onFiltroChange={setFiltro}
         canManagePortaria={canManagePortaria}
+        geradoEm={geradoEm}
       />
     </div>
   )

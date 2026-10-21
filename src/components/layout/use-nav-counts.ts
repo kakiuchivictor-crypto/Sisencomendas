@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { getNavCountsAction, type NavCounts } from "@/app/(app)/actions"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 
 export const NAV_COUNTS_QUERY_KEY = ["nav-counts"] as const
 
@@ -16,6 +17,8 @@ export function useNavCounts(initialCounts: NavCounts) {
     queryKey: NAV_COUNTS_QUERY_KEY,
     queryFn: () => getNavCountsAction(),
     initialData: initialCounts,
+    // O Realtime invalida a cada mudanca em encomendas.
+    staleTime: STALE_TIME_COM_REALTIME,
     refetchInterval: 5 * 60 * 1000,
   })
 

@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate, formatDateTime, formatDurationSeconds } from "@/lib/format"
+import { STALE_TIME_COM_REALTIME } from "@/lib/query-invalidation"
 import {
   TIPO_ENCOMENDA_LABELS,
   TRANSPORTADORA_LABELS,
@@ -88,6 +89,7 @@ export function RelatorioView({ initialResult }: { initialResult: ReportResult }
     // Arrow function: o React Query passa um contexto (signal, client) que
     // server actions nao conseguem serializar — a chamada falharia em silencio.
     queryFn: () => listTransportadorasAction(),
+    staleTime: STALE_TIME_COM_REALTIME,
   })
 
   const { data, isFetching } = useQuery({

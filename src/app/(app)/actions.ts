@@ -1,15 +1,16 @@
 "use server"
 
-import { redirect } from "next/navigation"
-
-import { withTenantContext } from "@/lib/db"
 import { encomendaRepository } from "@/repositories/encomenda-repository"
 import { signOut } from "@/services/auth/auth-service"
-import { getSessionClaims } from "@/services/auth/session"
+import { withSession } from "@/services/auth/session"
 
+/**
+ * Encerra a sessao (apaga os cookies sb-*). Nao redireciona: quem chama
+ * (useLogout) limpa o cache do TanStack e faz uma navegacao COMPLETA para
+ * /login, para nao sobrar dado do usuario anterior em memoria no aparelho.
+ */
 export async function logoutAction(): Promise<void> {
   await signOut()
-  redirect("/login")
 }
 
 export type NavCounts = {
@@ -20,22 +21,11 @@ export type NavCounts = {
 }
 
 /**
- * Contadores das abas do header/barra inferior. Sao so dois COUNT de
- * pendentes (os mesmos usados pelos stat cards), sem listar linhas.
+ * Contadores das abas do header/barra inferior: uma consulta so (count
+ * filter) dentro da mesma transacao que confere a sessao.
  */
 export async function getNavCountsAction(): Promise<NavCounts> {
-  const claims = await getSessionClaims()
+  const session = await withSession((tx) => encomendaRepository.navCounts(tx))
 
-  if (!claims) {
-    return { encomendas: 0, correspondencias: 0 }
-  }
-
-  return withTenantContext(claims, async (tx) => {
-    const [encomendas, correspondencias] = await Promise.all([
-      encomendaRepository.countPendentes(tx, "encomenda"),
-      encomendaRepository.countPendentes(tx, "correspondencia"),
-    ])
-
-    return { encomendas, correspondencias }
-  })
+  return session?.dados ?? { encomendas: 0, correspondencias: 0 }
 }

@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { invalidarListaInfinita } from "@/lib/query-invalidation"
 
 import { EncomendaFormDialog } from "./encomenda-form-dialog"
 
@@ -31,7 +32,7 @@ export function NovaEncomendaButton() {
           })
           void queryClient.invalidateQueries({ queryKey: ["cards-stats", "encomenda"] })
           void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
-          void queryClient.invalidateQueries({ queryKey: ["encomendas-historico"] })
+          void invalidarListaInfinita(queryClient, ["encomendas-historico"])
         }}
       />
     </>

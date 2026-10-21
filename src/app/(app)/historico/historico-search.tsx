@@ -2,12 +2,14 @@
 
 import { keepPreviousData, useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Search } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { refetchAoMontar, useDadosDoServidor } from "@/hooks/use-dados-do-servidor"
 import { useInfiniteScrollSentinel } from "@/hooks/use-infinite-scroll-sentinel"
+import { STALE_TIME_COM_REALTIME, invalidarListaInfinita } from "@/lib/query-invalidation"
 import { cn } from "@/lib/utils"
 import { ENCOMENDAS_PAGE_SIZE } from "@/repositories/encomenda-repository"
 import type { EncomendaComDetalhes } from "@/types/domain"
@@ -41,15 +43,27 @@ function periodoParaDesde(periodo: Periodo): Date | undefined {
 export function HistoricoSearch({
   initialResults,
   canDelete = false,
+  geradoEm,
 }: {
   initialResults: EncomendaComDetalhes[]
   canDelete?: boolean
+  /** Instante (ms) em que o servidor leu initialResults (ver useDadosDoServidor). */
+  geradoEm?: number
 }) {
   const [search, setSearch] = useState("")
   const [periodo, setPeriodo] = useState<Periodo>("todos")
   const debouncedSearch = useDebouncedValue(search, 250)
   const desde = periodoParaDesde(periodo)
   const queryClient = useQueryClient()
+  const semFiltro = !debouncedSearch && periodo === "todos"
+  const initialDataServidor = useMemo(
+    () => ({ pages: [initialResults], pageParams: [0] }),
+    [initialResults]
+  )
+  const initialData = semFiltro ? initialDataServidor : undefined
+
+  // So a busca sem filtro corresponde ao payload do servidor.
+  useDadosDoServidor(["encomendas-historico", "", "todos"], initialData, geradoEm)
 
   const { data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage, isFetching } =
     useInfiniteQuery({
@@ -61,11 +75,11 @@ export function HistoricoSearch({
         lastPage.length < ENCOMENDAS_PAGE_SIZE
           ? undefined
           : allPages.reduce((total, page) => total + page.length, 0),
-      initialData:
-        debouncedSearch || periodo !== "todos"
-          ? undefined
-          : { pages: [initialResults], pageParams: [0] },
+      initialData,
+      initialDataUpdatedAt: semFiltro ? geradoEm : undefined,
+      refetchOnMount: refetchAoMontar(semFiltro ? geradoEm : undefined),
       placeholderData: keepPreviousData,
+      staleTime: STALE_TIME_COM_REALTIME,
     })
 
   const sentinelRef = useInfiniteScrollSentinel({
@@ -77,14 +91,14 @@ export function HistoricoSearch({
   function handleReverted() {
     void refetch()
     void queryClient.invalidateQueries({ queryKey: ["encomendas-pendentes"] })
-    void queryClient.invalidateQueries({ queryKey: ["encomendas-entregues"] })
+    void invalidarListaInfinita(queryClient, ["encomendas-entregues"])
     void queryClient.invalidateQueries({ queryKey: ["cards-stats"] })
     void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
   }
 
   function handleDeleted() {
     void refetch()
-    void queryClient.invalidateQueries({ queryKey: ["encomendas-entregues"] })
+    void invalidarListaInfinita(queryClient, ["encomendas-entregues"])
     void queryClient.invalidateQueries({ queryKey: ["cards-stats"] })
     void queryClient.invalidateQueries({ queryKey: ["nav-counts"] })
   }

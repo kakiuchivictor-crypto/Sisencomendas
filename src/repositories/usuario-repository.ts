@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import type { Transaction } from "@/lib/db"
-import { usuarios } from "@/db/schema"
+import { condominios, usuarios } from "@/db/schema"
 import type { UsuarioRole } from "@/types/domain"
 
 export type NewUsuarioInput = {
@@ -25,7 +25,36 @@ const listSelection = {
   createdAt: usuarios.createdAt,
 }
 
+/**
+ * id do usuario lido da propria GUC "request.jwt.claims" que withTenantContext
+ * acabou de definir (mesma origem do auth.uid() usado pela RLS). Assim a
+ * consulta da sessao nao precisa de parametro nem de interpolar o id.
+ */
+const usuarioDaTransacao = sql`(current_setting('request.jwt.claims', true)::jsonb ->> 'sub')::uuid`
+
 export const usuarioRepository = {
+  /**
+   * Perfil do usuario dono da transacao + nome/tema do condominio dele, numa
+   * consulta so (sem parametros: segue no mesmo pacote do set_config). Usado
+   * pela sessao (services/auth/session.ts) a cada pagina/acao.
+   */
+  async findSessao(tx: Transaction) {
+    const [row] = await tx
+      .select({
+        id: usuarios.id,
+        nome: usuarios.nome,
+        role: usuarios.role,
+        condominioId: usuarios.condominioId,
+        condominioNome: condominios.nome,
+        condominioTema: condominios.tema,
+      })
+      .from(usuarios)
+      .innerJoin(condominios, eq(condominios.id, usuarios.condominioId))
+      .where(sql`${usuarios.id} = ${usuarioDaTransacao}`)
+
+    return row ?? null
+  },
+
   async findById(tx: Transaction, id: string) {
     const [usuario] = await tx
       .select()
