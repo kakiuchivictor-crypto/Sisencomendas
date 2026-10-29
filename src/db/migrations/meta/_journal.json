@@ -162,6 +162,13 @@
       "when": 1792559404611,
       "tag": "0022_add_transportadoras",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793253697254,
+      "tag": "0023_add_transportadoras_delete_policy",
+      "breakpoints": true
     }
   ]
 }

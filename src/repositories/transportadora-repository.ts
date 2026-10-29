@@ -61,4 +61,17 @@ export const transportadoraRepository = {
 
     return transportadora
   },
+
+  /**
+   * Remove um nome do catálogo (RLS restringe ao tenant). As encomendas já
+   * registradas não mudam: guardam o nome em transportadora_outro.
+   */
+  async remove(tx: Transaction, id: string) {
+    const [removida] = await tx
+      .delete(transportadoras)
+      .where(eq(transportadoras.id, id))
+      .returning()
+
+    return removida ?? null
+  },
 }

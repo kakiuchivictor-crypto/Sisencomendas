@@ -1,6 +1,6 @@
 "use client"
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -30,7 +30,13 @@ import { offlineAwareErrorMessage } from "@/lib/network"
 import { cn } from "@/lib/utils"
 import type { Morador } from "@/types/domain"
 
-import { deleteMoradorAction, listMoradoresAction } from "./actions"
+import { MoradorSearchCombobox } from "../_encomendas/morador-search-combobox"
+import {
+  contarEncomendasMoradorAction,
+  deleteMoradorAction,
+  listMoradoresAction,
+  transferirEExcluirMoradorAction,
+} from "./actions"
 import { MoradorFormDialog } from "./morador-form-dialog"
 
 export function MoradoresList({
@@ -49,6 +55,24 @@ export function MoradoresList({
 
   const [moradorToDelete, setMoradorToDelete] = useState<Morador | null>(null)
   const [isDeleting, startDeleteTransition] = useTransition()
+  // Cadastro que recebe as encomendas quando o excluído tem histórico
+  // (duplicado ou nome errado).
+  const [moradorDestino, setMoradorDestino] = useState<Morador | null>(null)
+  const queryClient = useQueryClient()
+
+  const { data: encomendasDoMorador, isFetching: contandoEncomendas } = useQuery({
+    queryKey: ["morador-encomendas-count", moradorToDelete?.id],
+    queryFn: () => contarEncomendasMoradorAction(moradorToDelete!.id),
+    enabled: moradorToDelete !== null,
+    staleTime: 0,
+  })
+  const precisaTransferir = (encomendasDoMorador?.total ?? 0) > 0
+  const destinoInvalido = moradorDestino !== null && moradorDestino.id === moradorToDelete?.id
+
+  function fecharExclusao() {
+    setMoradorToDelete(null)
+    setMoradorDestino(null)
+  }
 
   const { data: moradores, refetch, isFetching } = useQuery({
     queryKey: ["moradores", debouncedSearch],
@@ -62,16 +86,23 @@ export function MoradoresList({
 
     startDeleteTransition(async () => {
       try {
-        const result = await deleteMoradorAction(moradorToDelete.id)
+        const result = precisaTransferir
+          ? await transferirEExcluirMoradorAction(moradorToDelete.id, moradorDestino!.id)
+          : await deleteMoradorAction(moradorToDelete.id)
 
         if (!result.success) {
           toast.error(result.error)
           return
         }
 
-        toast.success("Morador excluído.")
-        setMoradorToDelete(null)
+        toast.success(
+          precisaTransferir
+            ? `Encomendas transferidas para ${moradorDestino!.nome} e morador excluído.`
+            : "Morador excluído."
+        )
+        fecharExclusao()
         void refetch()
+        void queryClient.invalidateQueries({ queryKey: ["moradores-combobox"] })
       } catch {
         toast.error(offlineAwareErrorMessage("Não foi possível excluir o morador."))
       }
@@ -181,25 +212,60 @@ export function MoradoresList({
 
       <AlertDialog
         open={moradorToDelete !== null}
-        onOpenChange={(open) => !open && setMoradorToDelete(null)}
+        onOpenChange={(open) => !open && fecharExclusao()}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir morador?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove {moradorToDelete?.nome} da lista de moradores.
-              Não será possível excluir se já houver encomendas registradas
-              para ele.
+              {precisaTransferir ? (
+                <>
+                  {moradorToDelete?.nome} tem {encomendasDoMorador?.total} encomenda(s)
+                  registrada(s)
+                  {encomendasDoMorador?.pendentes
+                    ? `, sendo ${encomendasDoMorador.pendentes} pendente(s)`
+                    : ""}
+                  . Se for um cadastro duplicado ou com nome errado, escolha o
+                  cadastro correto: as encomendas serão transferidas para ele e
+                  este cadastro será excluído.
+                </>
+              ) : (
+                <>Esta ação remove {moradorToDelete?.nome} da lista de moradores.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {precisaTransferir && (
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">Transferir encomendas para</span>
+              <MoradorSearchCombobox
+                value={moradorDestino}
+                onChange={setMoradorDestino}
+                placeholder="Buscar o cadastro correto..."
+              />
+              {destinoInvalido && (
+                <p className="text-destructive text-sm">
+                  Escolha um cadastro diferente do que será excluído.
+                </p>
+              )}
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive-solid"
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={
+                isDeleting ||
+                contandoEncomendas ||
+                encomendasDoMorador === undefined ||
+                (precisaTransferir && (moradorDestino === null || destinoInvalido))
+              }
             >
-              {isDeleting ? "Excluindo..." : "Excluir"}
+              {isDeleting
+                ? "Excluindo..."
+                : precisaTransferir
+                  ? "Transferir e excluir"
+                  : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

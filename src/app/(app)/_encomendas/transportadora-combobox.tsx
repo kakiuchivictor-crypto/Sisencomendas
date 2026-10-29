@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { ChevronsUpDown, Plus } from "lucide-react"
+import { ChevronsUpDown, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -33,7 +33,11 @@ import {
 } from "@/lib/transportadoras"
 import { cn } from "@/lib/utils"
 
-import { createTransportadoraAction, listTransportadorasAction } from "./actions"
+import {
+  createTransportadoraAction,
+  listTransportadorasAction,
+  removeTransportadoraAction,
+} from "./actions"
 
 /**
  * Mesmo visual dos campos de texto do formulário (Input): altura 40px
@@ -46,7 +50,8 @@ const TRIGGER_CLASSNAME =
  * Transportadora do item: fixas (Correios, Amazon...) + nomes personalizados
  * já cadastrados no condomínio (J&T, Shein...). Um nome novo é salvo no
  * catálogo na hora ("Adicionar transportadora “X”") e fica disponível nas
- * próximas encomendas. No formulário continua valendo o contrato antigo:
+ * próximas encomendas. Nomes cadastrados errados podem ser removidos pela
+ * lixeira ao lado do nome (clique duplo de confirmação). No formulário continua valendo o contrato antigo:
  * fixa → { transportadora: valor, transportadoraOutro: "" };
  * personalizada → { transportadora: "outros", transportadoraOutro: nome }.
  *
@@ -72,6 +77,9 @@ export function TransportadoraCombobox({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [creating, setCreating] = useState(false)
+  // Lixeira em dois toques: o primeiro arma a confirmação, o segundo remove.
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState<string | null>(null)
+  const [removendo, setRemovendo] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: cadastradas } = useQuery({
@@ -120,6 +128,33 @@ export function TransportadoraCombobox({
     setSearch("")
   }
 
+  async function handleRemove(item: { id: string; nome: string }) {
+    if (removendo) return
+
+    if (confirmandoRemocao !== item.id) {
+      setConfirmandoRemocao(item.id)
+      return
+    }
+
+    setRemovendo(item.id)
+    try {
+      const result = await removeTransportadoraAction(item.id)
+
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+
+      toast.success(`Transportadora “${item.nome}” removida da lista.`)
+      await queryClient.invalidateQueries({ queryKey: TRANSPORTADORAS_QUERY_KEY })
+    } catch {
+      toast.error(offlineAwareErrorMessage("Não foi possível remover a transportadora."))
+    } finally {
+      setRemovendo(null)
+      setConfirmandoRemocao(null)
+    }
+  }
+
   async function handleCreate() {
     if (!podeAdicionar || creating) return
 
@@ -155,6 +190,7 @@ export function TransportadoraCombobox({
         setOpen(nextOpen)
         if (!nextOpen) {
           setSearch("")
+          setConfirmandoRemocao(null)
           onBlur?.()
         }
       }}
@@ -186,8 +222,22 @@ export function TransportadoraCombobox({
                 {TRANSPORTADORA_COMBOBOX_LABELS.vazio}
               </CommandEmpty>
             )}
-            {/* Cadastradas pelo condominio primeiro: sao as que o porteiro
-                mais precisa encontrar (as fixas ele ja conhece). */}
+            {/* Principais (fixas) primeiro: sao as mais usadas no dia a dia;
+                as cadastradas pelo condominio vem logo abaixo. */}
+            {fixasFiltradas.length > 0 && (
+              <CommandGroup heading={TRANSPORTADORA_COMBOBOX_LABELS.grupoFixas}>
+                {fixasFiltradas.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={`fixa:${option.value}`}
+                    data-checked={value.transportadora === option.value}
+                    onSelect={() => selecionar({ tipo: "fixa", valor: option.value })}
+                  >
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
             {cadastradasFiltradas.length > 0 && (
               <CommandGroup heading={TRANSPORTADORA_COMBOBOX_LABELS.grupoCadastradas}>
                 {cadastradasFiltradas.map((item) => (
@@ -199,21 +249,34 @@ export function TransportadoraCombobox({
                     }
                     onSelect={() => selecionar({ tipo: "personalizada", nome: item.nome })}
                   >
-                    {item.nome}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            {fixasFiltradas.length > 0 && (
-              <CommandGroup heading={TRANSPORTADORA_COMBOBOX_LABELS.grupoFixas}>
-                {fixasFiltradas.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={`fixa:${option.value}`}
-                    data-checked={value.transportadora === option.value}
-                    onSelect={() => selecionar({ tipo: "fixa", valor: option.value })}
-                  >
-                    {option.label}
+                    <span className="min-w-0 flex-1 truncate">{item.nome}</span>
+                    {/* Botao dentro do item: stopPropagation evita que o clique
+                        tambem selecione a transportadora (onSelect do cmdk). */}
+                    <button
+                      type="button"
+                      aria-label={
+                        confirmandoRemocao === item.id
+                          ? `Confirmar remoção de ${item.nome}`
+                          : `Remover ${item.nome} da lista`
+                      }
+                      title="Remover da lista"
+                      disabled={removendo !== null}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        void handleRemove(item)
+                      }}
+                      className={cn(
+                        "text-muted-foreground hover:text-destructive flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs transition-colors pointer-coarse:h-9 pointer-coarse:px-2.5 disabled:opacity-50",
+                        confirmandoRemocao === item.id &&
+                          "bg-destructive text-white hover:text-white"
+                      )}
+                    >
+                      <Trash2 className="size-3.5" />
+                      {confirmandoRemocao === item.id &&
+                        (removendo === item.id ? "Removendo..." : "Remover?")}
+                    </button>
                   </CommandItem>
                 ))}
               </CommandGroup>

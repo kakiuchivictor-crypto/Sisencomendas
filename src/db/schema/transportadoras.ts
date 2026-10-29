@@ -21,8 +21,9 @@ import { sisencomendasSchema } from "./namespace"
  * transportadora = 'outros' + transportadora_outro = nome. O catálogo só
  * serve para o porteiro não precisar redigitar o nome a cada cadastro.
  *
- * Unicidade case-insensitive via índice em lower(nome); sem policy de
- * UPDATE/DELETE de propósito (mesmo modelo de remetentes).
+ * Unicidade case-insensitive via índice em lower(nome). Sem policy de
+ * UPDATE; DELETE liberado no tenant (0023) para limpar nomes cadastrados
+ * errados — as encomendas não referenciam a tabela, então nada quebra.
  */
 export const transportadoras = sisencomendasSchema.table(
   "transportadoras",
@@ -63,6 +64,11 @@ export const transportadoras = sisencomendasSchema.table(
       for: "insert",
       to: "sisencomendas_app",
       withCheck: sql`condominio_id = sisencomendas.current_condominio_id()`,
+    }),
+    pgPolicy("transportadoras_delete_tenant", {
+      for: "delete",
+      to: "sisencomendas_app",
+      using: sql`condominio_id = sisencomendas.current_condominio_id()`,
     }),
   ]
 ).enableRLS()

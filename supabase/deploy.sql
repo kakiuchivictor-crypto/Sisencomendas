@@ -350,6 +350,13 @@ DO $$ BEGIN
     WITH CHECK (condominio_id = sisencomendas.current_condominio_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Remover nomes cadastrados errados (migracao 0023). Sem UPDATE.
+DO $$ BEGIN
+  CREATE POLICY transportadoras_delete_tenant ON sisencomendas.transportadoras
+    AS PERMISSIVE FOR DELETE TO authenticated
+    USING (condominio_id = sisencomendas.current_condominio_id());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 DO $$ BEGIN
   CREATE POLICY encomendas_select_tenant ON sisencomendas.encomendas
     AS PERMISSIVE FOR SELECT TO authenticated
@@ -414,10 +421,10 @@ GRANT SELECT, INSERT ON sisencomendas.log_atividade TO authenticated;
 -- sempre (nao ha tela de edicao/exclusao por enquanto).
 GRANT SELECT, INSERT ON sisencomendas.remetentes TO authenticated;
 
--- Mesmo modelo de remetentes (sem UPDATE/DELETE). REVOKE explicito porque o
--- Supabase concede privilegios padrao a anon/PUBLIC em tabelas novas.
+-- Sem UPDATE; DELETE para limpar nomes errados (0023). REVOKE explicito
+-- porque o Supabase concede privilegios padrao a anon/PUBLIC em tabelas novas.
 REVOKE ALL ON sisencomendas.transportadoras FROM PUBLIC, anon;
-GRANT SELECT, INSERT ON sisencomendas.transportadoras TO authenticated;
+GRANT SELECT, INSERT, DELETE ON sisencomendas.transportadoras TO authenticated;
 
 GRANT EXECUTE ON FUNCTION sisencomendas.current_condominio_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION sisencomendas.current_usuario_role() TO authenticated;

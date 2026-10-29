@@ -497,4 +497,43 @@ export const encomendaRepository = {
 
     return row?.avgSeconds ? Number(row.avgSeconds) : null
   },
+
+  /** Quantas encomendas (todas e só as pendentes) um morador tem. */
+  async contarPorMorador(tx: Transaction, moradorId: string) {
+    const [row] = await tx
+      .select({
+        total: sql<number>`count(*)::int`,
+        pendentes: sql<number>`count(*) filter (where ${encomendas.status} = 'pendente')::int`,
+      })
+      .from(encomendas)
+      .where(eq(encomendas.moradorId, moradorId))
+
+    return { total: row?.total ?? 0, pendentes: row?.pendentes ?? 0 }
+  },
+
+  /**
+   * Passa todas as encomendas de um morador (cadastro duplicado ou com nome
+   * errado) para outro. As pendentes também recebem o endereço do destino,
+   * para aparecerem certas na lista da portaria; as entregues mantêm o
+   * endereço registrado na época (histórico).
+   */
+  async transferirMorador(
+    tx: Transaction,
+    deMoradorId: string,
+    para: { id: string; rua: string; numero: string }
+  ) {
+    const pendentes = await tx
+      .update(encomendas)
+      .set({ moradorId: para.id, rua: para.rua, numero: para.numero, updatedAt: new Date() })
+      .where(and(eq(encomendas.moradorId, deMoradorId), eq(encomendas.status, "pendente")))
+      .returning({ id: encomendas.id })
+
+    const demais = await tx
+      .update(encomendas)
+      .set({ moradorId: para.id, updatedAt: new Date() })
+      .where(eq(encomendas.moradorId, deMoradorId))
+      .returning({ id: encomendas.id })
+
+    return pendentes.length + demais.length
+  },
 }

@@ -716,3 +716,32 @@ export async function createTransportadoraAction(
     throw error
   }
 }
+
+export type RemoveTransportadoraResult = { success: true } | { success: false; error: string }
+
+/**
+ * Remove um nome do catálogo (cadastrado errado, duplicado...). Qualquer
+ * papel pode remover, assim como qualquer papel cadastra: as encomendas já
+ * registradas guardam o nome em transportadora_outro e não são afetadas.
+ */
+export async function removeTransportadoraAction(
+  id: string
+): Promise<RemoveTransportadoraResult> {
+  const claims = await getSessionClaims()
+
+  if (!claims) {
+    return { success: false, error: "Sessão expirada. Faça login novamente." }
+  }
+
+  if (!idParamSchema.safeParse(id).success) {
+    return { success: false, error: "Dados inválidos. Recarregue a página e tente novamente." }
+  }
+
+  const removida = await withTenantContext(claims, (tx) => transportadoraRepository.remove(tx, id))
+
+  if (!removida) {
+    return { success: false, error: "Transportadora não encontrada (talvez já tenha sido removida)." }
+  }
+
+  return { success: true }
+}
